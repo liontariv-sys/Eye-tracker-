@@ -8,7 +8,7 @@
     {
       "binding": "DB",
       "database_name": "lpnec-oculab-db",
-      "database_id": "00000000-0000-4000-8000-000000000000",
+      "database_id": "c2823315-f689-4625-ba1f-9ad8d889e7cd",
       "migrations_dir": "drizzle"
     }
   ]

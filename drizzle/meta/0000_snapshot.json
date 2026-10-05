@@ -1,0 +1,71 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "a7c0654f-fb90-433c-830f-db0eeff60894",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "tables": {
+    "access_requests": {
+      "name": "access_requests",
+      "columns": {
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'pending'"
+        },
+        "requested_at": {
+          "name": "requested_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "decided_at": {
+          "name": "decided_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "decided_by": {
+          "name": "decided_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}

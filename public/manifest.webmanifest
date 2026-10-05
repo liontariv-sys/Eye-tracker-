@@ -1,0 +1,27 @@
+{
+  "name": "LPNeC Oculab",
+  "short_name": "Oculab",
+  "description": "Tabulação, limpeza e organização de dados de eye tracking do LPNeC/UFPB.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5f8fa",
+  "theme_color": "#0c1d2a",
+  "lang": "pt-BR",
+  "categories": ["education", "productivity", "science"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

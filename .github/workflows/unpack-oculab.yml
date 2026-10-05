@@ -1,0 +1,27 @@
+name: Organizar codigo-fonte do Oculab
+
+on:
+  push:
+    paths:
+      - ".github/workflows/unpack-oculab.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  unpack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositorio
+        uses: actions/checkout@v4
+
+      - name: Descompactar codigo-fonte
+        run: unzip -o LPNeC-Oculab-Cloudflare.zip
+
+      - name: Publicar arquivos editaveis
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "Organizar codigo-fonte do LPNeC Oculab"
+          git push

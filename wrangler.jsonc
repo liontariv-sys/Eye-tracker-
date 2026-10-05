@@ -4,6 +4,10 @@
   "main": "./worker/index.ts",
   "compatibility_date": "2026-05-15",
   "compatibility_flags": ["nodejs_compat"],
+"vars": {
+  "OCULAB_OWNER_EMAIL": "liontariv@gmail.com",
+  "OCULAB_NOTIFICATION_EMAIL": "vinicius566outlook@gmail.com"
+},
   "d1_databases": [
     {
       "binding": "DB",

@@ -15,7 +15,6 @@ import {
   FileCheck2,
   Gauge,
   GripVertical,
-  Info,
   Layers3,
   LogOut,
   Plus,
@@ -530,7 +529,7 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
         {step === 1 && (
           <section className="stage import-stage">
             <div className="welcome-panel">
-              <div className="welcome-copy"><Badge variant="outline">Ferramenta do LPNeC</Badge><h2>Do dado bruto à planilha pronta para pesquisa.</h2><p>O LPNeC Oculab organiza arquivos de eye tracking, calcula apenas as variáveis que você escolher e entrega um Excel claro para revisão ou análise estatística.</p></div>
+              <div className="welcome-copy"><h2>Do dado bruto à planilha pronta para pesquisa.</h2><p>O LPNeC Oculab organiza arquivos de eye tracking, calcula apenas as variáveis que você escolher e entrega um Excel claro para revisão ou análise estatística.</p></div>
               <div className="welcome-outcome"><span><FileCheck2 /></span><div><strong>Você escolhe o que entra.</strong><p>Formatos, variáveis e estrutura final se adaptam ao desenho do estudo.</p></div></div>
             </div>
             <button className="dropzone" onClick={() => fileInput.current?.click()} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); void onFiles(event.dataTransfer.files); }}>
@@ -664,7 +663,6 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
                 {metricFields.map((metric) => <div className="metric-row" key={metric.key}><div><strong>{metric.label}</strong><span>{metric.detail}</span></div><Switch checked={metrics[metric.key]} onCheckedChange={(checked) => setMetrics((current) => ({ ...current, [metric.key]: checked }))} aria-label={`Ativar ${metric.label}`} /></div>)}
               </CardContent>
             </Card>
-            <div className="method-note"><Info size={18} /><p><strong>Regra de pareamento:</strong> depois de consolidar amostras repetidas em eventos únicos, cada fixação recebe somente o evento imediatamente posterior quando ele é uma sacada. Nenhuma sacada é reutilizada.</p></div>
             <div className="selection-summary"><span><strong>{selectedMetricCount}</strong> {selectedMetricCount === 1 ? "variável selecionada" : "variáveis selecionadas"}</span><span><strong>{Number(outputSheets.eventTrace) + Number(outputSheets.stimulusSummary) + Number(phase3Selected)}</strong> {Number(outputSheets.eventTrace) + Number(outputSheets.stimulusSummary) + Number(phase3Selected) === 1 ? "fase no Excel" : "fases no Excel"}</span></div>
             <div className="actions"><Button variant="outline" onClick={() => setStep(2)}>Voltar</Button><Button onClick={run}>Gerar tabulação <Activity /></Button></div>
           </section>

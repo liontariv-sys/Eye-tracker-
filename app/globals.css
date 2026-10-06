@@ -214,9 +214,8 @@ button, input, textarea { font: inherit; }
 .welcome-panel { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(270px, .55fr); align-items: center; gap: 28px; margin-bottom: 20px; padding: clamp(24px, 3vw, 36px); color: white; border: 1px solid #214b54; border-radius: 20px; background: radial-gradient(circle at 84% 20%, #66d0c62e 0 2px, transparent 3px), linear-gradient(135deg, #0c1d2a 0%, #123a43 68%, #146a63 100%); background-size: 28px 28px, auto; box-shadow: 0 16px 38px #0c1d2a1b; }
 .welcome-panel::after { position: absolute; right: -64px; bottom: -92px; width: 240px; height: 180px; content: ""; border: 32px solid #a8ffb218; border-radius: 50%; transform: rotate(-18deg); }
 .welcome-copy { position: relative; z-index: 1; max-width: 720px; }
-.welcome-copy [data-slot="badge"] { margin-bottom: 13px; color: #dffff0; border-color: #77d9ce; background: #ffffff0d; }
-.welcome-copy h2 { max-width: 670px; margin: 0; font-size: clamp(1.65rem, 3vw, 2.45rem); line-height: 1.08; letter-spacing: -.04em; }
-.welcome-copy p { max-width: 720px; margin: 14px 0 0; color: #c4dfdc; font-size: 1rem; line-height: 1.6; }
+.welcome-copy h2 { max-width: 680px; margin: 0; color: #f8fffe; font-family: "Avenir Next", "Segoe UI Variable", "Segoe UI", Arial, sans-serif; font-size: clamp(1.9rem, 3.2vw, 2.75rem); font-weight: 720; line-height: 1.04; letter-spacing: -.045em; text-wrap: balance; }
+.welcome-copy p { max-width: 660px; margin: 16px 0 0; color: #c7dfdd; font-family: "Avenir Next", "Segoe UI Variable", "Segoe UI", Arial, sans-serif; font-size: .96rem; font-weight: 400; line-height: 1.55; text-wrap: pretty; }
 .welcome-outcome { position: relative; z-index: 1; display: flex; align-items: flex-start; gap: 12px; padding: 17px; border: 1px solid #6fd4ca55; border-radius: 15px; background: #08192280; backdrop-filter: blur(8px); }
 .welcome-outcome > span { width: 42px; height: 42px; flex: none; display: grid; place-items: center; color: var(--lpnec-navy); border-radius: 12px; background: linear-gradient(135deg, var(--lpnec-turquoise), var(--lpnec-green)); }
 .welcome-outcome svg { width: 21px; }
@@ -379,9 +378,6 @@ button, input, textarea { font: inherit; }
 .metric-row strong, .metric-row span { display: block; }
 .metric-row strong { font-size: .82rem; }
 .metric-row span { margin-top: 3px; color: #778998; font-size: .71rem; }
-.method-note { margin-top: 16px; display: flex; gap: 11px; padding: 14px 16px; color: #285d57; border: 1px solid #aeddd5; border-radius: 12px; background: #effaf7; }
-.method-note svg { flex: none; margin-top: 1px; color: #0b8c84; }
-.method-note p { margin: 0; font-size: .8rem; line-height: 1.55; }
 .selection-summary { margin-top: 14px; display: flex; justify-content: flex-end; gap: 10px; color: #597169; font-size: .78rem; }
 .selection-summary span { padding: 7px 10px; border: 1px solid #d8e7e2; border-radius: 999px; background: white; }
 .selection-summary strong { color: #0b817a; }

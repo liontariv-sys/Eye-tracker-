@@ -35,7 +35,7 @@ export default function AdminLogin() {
     <div className="access-orb access-orb-one" aria-hidden="true" /><div className="access-orb access-orb-two" aria-hidden="true" />
     <section className="access-shell">
       <aside className="access-hero">
-        <div className="access-hero-brand"><Image src="/brand/lpnec-logo-transparent.png" alt="LPNeC" width={132} height={82} priority /><span>Oculab</span></div>
+        <div className="access-hero-brand"><Image src="/brand/lpnec-logo-transparent.png" alt="LPNeC" width={132} height={82} priority unoptimized /><span>Oculab</span></div>
         <div className="access-hero-copy"><span className="access-kicker"><Sparkles /> Gestão segura</span><h2>Controle de acesso com <em>simplicidade.</em></h2><p>Aprove solicitações e mantenha o ambiente do laboratório organizado em um só lugar.</p></div>
         <div className="access-hero-highlights"><div><span><Eye /></span><p><strong>Visão centralizada</strong><small>Pedidos e acessos reunidos.</small></p></div><div><span><ShieldCheck /></span><p><strong>Ambiente protegido</strong><small>Entrada exclusiva do administrador.</small></p></div></div>
       </aside>

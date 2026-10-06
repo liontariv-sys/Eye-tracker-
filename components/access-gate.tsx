@@ -74,7 +74,7 @@ export default function AccessGate({ email = "", status = "none", adminHref }: P
     <div className="access-orb access-orb-two" aria-hidden="true" />
     <section className="access-shell">
       <aside className="access-hero">
-        <div className="access-hero-brand"><Image src="/brand/lpnec-logo-transparent.png" alt="LPNeC" width={132} height={82} priority /><span>Oculab</span></div>
+        <div className="access-hero-brand"><Image src="/brand/lpnec-logo-transparent.png" alt="LPNeC" width={132} height={82} priority unoptimized /><span>Oculab</span></div>
         <div className="access-hero-copy">
           <span className="access-kicker"><Sparkles /> Tecnologia para pesquisa</span>
           <h2>Dados oculares com <em>clareza e precisão.</em></h2>

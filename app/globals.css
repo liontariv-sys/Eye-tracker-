@@ -6,6 +6,86 @@
   scrollbar-width: thin;
 }
 
+/* Login LPNeC Oculab — identidade inspirada no universo visual do laboratório */
+.access-page { position: relative; isolation: isolate; min-height: 100vh; display: grid; place-items: center; overflow: hidden; padding: clamp(22px, 4vw, 58px); font-family: "Avenir Next", "Segoe UI", Arial, sans-serif; background: linear-gradient(138deg, #062e59 0%, #075d9e 47%, #0b92bb 100%); }
+.access-page::before { position: absolute; z-index: -2; inset: 0; content: ""; opacity: .42; background-image: radial-gradient(circle at center, #9bfff0 1.4px, transparent 1.5px); background-size: 33px 33px; mask-image: linear-gradient(110deg, #000 0%, transparent 46%, #000 100%); }
+.access-page::after { position: absolute; z-index: -1; inset: 0; content: ""; background: linear-gradient(90deg, #041c3c24, transparent 42%, #041c3c25); pointer-events: none; }
+.access-orb { position: absolute; z-index: -1; border-radius: 50%; border: 1px solid #b8fff14d; background: linear-gradient(135deg, #67e4d029, #a8ffb214); box-shadow: inset 0 0 70px #d0fff21c; pointer-events: none; }
+.access-orb-one { width: min(46vw, 660px); aspect-ratio: 1; top: -32%; left: -12%; }
+.access-orb-two { width: min(38vw, 530px); aspect-ratio: 1; right: -11%; bottom: -28%; }
+.access-shell { width: min(100%, 1120px); min-height: min(720px, calc(100vh - 80px)); display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(410px, .92fr); overflow: hidden; border: 1px solid #d8ffff3d; border-radius: 32px; background: #ffffff12; box-shadow: 0 34px 90px #031a3459; backdrop-filter: blur(14px); }
+.access-hero { position: relative; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; padding: clamp(34px, 5vw, 68px); color: white; background: linear-gradient(145deg, #062949d9, #0875a1c9); }
+.access-hero::before { position: absolute; width: 470px; height: 470px; right: -225px; bottom: -180px; content: ""; border-radius: 50%; border: 70px solid #68e0d31a; box-shadow: 0 0 0 54px #a8ffb20b; }
+.access-hero::after { position: absolute; right: 9%; bottom: 16%; width: 118px; height: 118px; content: ""; opacity: .55; background: radial-gradient(circle, #8affdf 2px, transparent 2.5px); background-size: 16px 16px; }
+.access-hero-brand { position: relative; z-index: 1; display: flex; align-items: center; gap: 4px; }
+.access-hero-brand img { width: 110px; height: 68px; object-fit: contain; filter: brightness(0) invert(1) drop-shadow(0 8px 18px #001c3290); }
+.access-hero-brand span { margin-left: -9px; padding-left: 15px; color: #e7fffb; font-size: 1.25rem; font-weight: 750; border-left: 1px solid #cbfff071; }
+.access-hero-copy { position: relative; z-index: 1; max-width: 530px; margin: auto 0; padding: clamp(48px, 9vh, 100px) 0; }
+.access-kicker { width: fit-content; display: flex; align-items: center; gap: 8px; margin-bottom: 22px; padding: 8px 13px; color: #d9fff8; font-size: .71rem; font-weight: 800; text-transform: uppercase; letter-spacing: .13em; border: 1px solid #a1f8e96e; border-radius: 999px; background: #d7fff10d; }
+.access-kicker svg { width: 15px; height: 15px; color: #9dffe4; }
+.access-hero-copy h2 { margin: 0; max-width: 520px; font-size: clamp(2.65rem, 5vw, 4.9rem); font-weight: 820; line-height: .98; letter-spacing: -.057em; }
+.access-hero-copy h2 em { display: block; color: #91ffe1; font-style: normal; text-shadow: 0 8px 30px #65efd34a; }
+.access-hero-copy > p { max-width: 500px; margin: 26px 0 0; color: #d2ebf1; font-size: clamp(.98rem, 1.35vw, 1.1rem); line-height: 1.7; }
+.access-hero-highlights { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.access-hero-highlights > div { min-width: 0; display: flex; align-items: center; gap: 11px; padding: 14px; border: 1px solid #c5fff32b; border-radius: 16px; background: #072b4669; backdrop-filter: blur(8px); }
+.access-hero-highlights > div > span { width: 38px; height: 38px; flex: none; display: grid; place-items: center; color: #0a344f; border-radius: 12px; background: linear-gradient(135deg, #72dfd1, #a8ffb2); }
+.access-hero-highlights svg { width: 19px; height: 19px; }
+.access-hero-highlights p, .access-hero-highlights strong, .access-hero-highlights small { min-width: 0; display: block; margin: 0; }
+.access-hero-highlights strong { color: white; font-size: .78rem; }
+.access-hero-highlights small { margin-top: 3px; color: #b7dbe0; font-size: .67rem; line-height: 1.3; }
+.access-card { align-self: stretch; width: 100%; display: flex; flex-direction: column; justify-content: center; padding: clamp(34px, 5vw, 62px); text-align: left; border: 0; border-radius: 0; background: #fbfdfdf7; box-shadow: -16px 0 52px #031a341f; }
+.access-card-head { margin-bottom: 28px; }
+.access-icon { width: 58px; height: 58px; display: grid; place-items: center; margin: 0 0 22px; color: #075e72; border: 1px solid #a4e8df; border-radius: 18px; background: linear-gradient(135deg, #c8fff3, #b9ffbf); box-shadow: 0 12px 30px #1bba9e25; }
+.access-icon svg { width: 26px; height: 26px; }
+.access-icon.pending { color: #9c6c15; border-color: #f0daa1; background: #fff4d7; }
+.access-icon.denied { color: #a94747; border-color: #edc5c1; background: #fff0ee; }
+.access-card-kicker { display: block; margin-bottom: 8px; color: #087a83; font-size: .7rem; font-weight: 820; text-transform: uppercase; letter-spacing: .13em; }
+.access-card h1 { margin: 0; color: #082c46; font-size: clamp(2rem, 3.2vw, 2.75rem); font-weight: 820; line-height: 1.05; letter-spacing: -.045em; }
+.access-card-head > p { max-width: 430px; margin: 13px 0 0; color: #627680; font-size: .96rem; line-height: 1.6; }
+.access-primary { min-height: 52px; color: #062d4b; border-radius: 999px; background: linear-gradient(100deg, #68d9cf, #a8ffb2); box-shadow: 0 13px 28px #1aa8962e; transition: transform .18s ease, box-shadow .18s ease; }
+.access-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 16px 32px #1aa8963d; }
+.access-request-form > label { margin: 4px 0 -3px 2px; color: #294653; font-size: .81rem; }
+.access-email-field { min-height: 52px; padding: 0 16px; border-radius: 15px; }
+.access-email-field:focus-within { border-color: #34b7ad; box-shadow: 0 0 0 4px #38bdb219; }
+.access-email-field input { padding: 14px 0; font-size: .96rem; }
+.access-request-button { min-height: 49px; border-radius: 999px; }
+.access-privacy { margin-top: 18px; padding: 12px 13px; border-radius: 13px; font-size: .73rem; }
+.admin-entry { margin-top: 18px; padding: 12px 13px; border-radius: 14px; }
+.admin-entry a { border-radius: 999px; }
+.admin-entry-back { justify-content: center; color: #0b8179; }
+.admin-entry-back a { padding: 0; border: 0; background: transparent; font-size: .78rem; }
+
+@media (max-width: 900px) {
+  .access-page { align-items: start; overflow: auto; padding: 22px; }
+  .access-shell { min-height: auto; grid-template-columns: 1fr; border-radius: 28px; }
+  .access-hero { min-height: 420px; padding: 36px; }
+  .access-hero-copy { margin: 0; padding: 52px 0 46px; }
+  .access-hero-copy h2 { max-width: 650px; font-size: clamp(2.7rem, 8vw, 4.5rem); }
+  .access-hero-copy h2 em { display: inline; }
+  .access-hero-highlights { max-width: 580px; }
+  .access-card { padding: 44px clamp(28px, 8vw, 78px); }
+}
+
+@media (max-width: 720px) {
+  .access-page { padding: 0; background: linear-gradient(155deg, #062e59 0%, #0873a5 55%, #0b92bb 100%); }
+  .access-shell { width: 100%; border: 0; border-radius: 0; box-shadow: none; }
+  .access-hero { min-height: 338px; padding: 25px 22px 30px; }
+  .access-hero-brand img { width: 88px; height: 54px; }
+  .access-hero-brand span { font-size: 1.05rem; }
+  .access-hero-copy { padding: 35px 0 28px; }
+  .access-kicker { margin-bottom: 15px; padding: 7px 10px; font-size: .62rem; }
+  .access-hero-copy h2 { max-width: 440px; font-size: clamp(2.35rem, 12vw, 3.35rem); line-height: .98; }
+  .access-hero-copy h2 em { display: block; }
+  .access-hero-copy > p { margin-top: 18px; font-size: .91rem; line-height: 1.55; }
+  .access-hero-highlights { display: none; }
+  .access-card { min-height: calc(100vh - 338px); padding: 34px 22px calc(34px + env(safe-area-inset-bottom)); border-radius: 28px 28px 0 0; box-shadow: 0 -18px 44px #0420392c; }
+  .access-card-head { margin-bottom: 24px; }
+  .access-icon { width: 52px; height: 52px; margin-bottom: 18px; border-radius: 16px; }
+  .access-card h1 { font-size: clamp(1.9rem, 9vw, 2.35rem); }
+  .access-card-head > p { font-size: .9rem; }
+  .admin-entry-back { align-items: center; flex-direction: row; }
+}
+
 @utility scrollbar-none {
   scrollbar-width: none;
   &::-webkit-scrollbar { display: none; }
@@ -506,4 +586,53 @@ button, input, textarea { font: inherit; }
   .admin-request { grid-template-columns: 40px minmax(0, 1fr); gap: 12px; padding: 16px; }
   .request-label { grid-column: 2; justify-self: start; }
   .request-actions { grid-column: 2; flex-wrap: wrap; }
+}
+
+/* Mantém a nova tela acima das regras legadas de autenticação. */
+.access-page { position: relative; isolation: isolate; min-height: 100vh; display: grid; place-items: center; overflow: hidden; padding: clamp(22px, 4vw, 58px); font-family: "Avenir Next", "Segoe UI", Arial, sans-serif; background: linear-gradient(138deg, #062e59 0%, #075d9e 47%, #0b92bb 100%); }
+.access-card { align-self: stretch; width: 100%; display: flex; flex-direction: column; justify-content: center; padding: clamp(34px, 5vw, 62px); text-align: left; border: 0; border-radius: 0; background: #fbfdfdf7; box-shadow: -16px 0 52px #031a341f; }
+.access-icon { width: 58px; height: 58px; display: grid; place-items: center; margin: 0 0 22px; color: #075e72; border: 1px solid #a4e8df; border-radius: 18px; background: linear-gradient(135deg, #c8fff3, #b9ffbf); box-shadow: 0 12px 30px #1bba9e25; }
+.access-icon svg { width: 26px; height: 26px; }
+.access-card h1 { margin: 0; color: #082c46; font-family: inherit; font-size: clamp(2rem, 3.2vw, 2.75rem); font-weight: 820; line-height: 1.05; letter-spacing: -.045em; }
+.access-primary { min-height: 52px; color: #062d4b; border-radius: 999px; background: linear-gradient(100deg, #68d9cf, #a8ffb2); box-shadow: 0 13px 28px #1aa8962e; }
+.access-request-form > label { margin: 4px 0 -3px 2px; color: #294653; font-size: .81rem; }
+.access-email-field { min-height: 52px; padding: 0 16px; border-radius: 15px; }
+.access-email-field:focus-within { border-color: #34b7ad; box-shadow: 0 0 0 4px #38bdb219; }
+.access-email-field input { padding: 14px 0; font-size: .96rem; }
+.access-request-button { min-height: 49px; border-radius: 999px; }
+.access-privacy { margin-top: 18px; padding: 12px 13px; border-radius: 13px; font-size: .73rem; }
+.admin-entry { margin-top: 18px; padding: 12px 13px; border-radius: 14px; }
+.admin-entry a { border-radius: 999px; }
+.admin-entry-back { justify-content: center; color: #0b8179; }
+.admin-entry-back a { padding: 0; border: 0; background: transparent; font-size: .78rem; }
+
+@media (max-width: 900px) {
+  .access-page { align-items: start; overflow: auto; padding: 22px; }
+  .access-shell { min-height: auto; grid-template-columns: 1fr; border-radius: 28px; }
+  .access-hero { min-height: 420px; padding: 36px; }
+  .access-hero-copy { margin: 0; padding: 52px 0 46px; }
+  .access-hero-copy h2 { max-width: 650px; font-size: clamp(2.7rem, 8vw, 4.5rem); }
+  .access-hero-copy h2 em { display: inline; }
+  .access-hero-highlights { max-width: 580px; }
+  .access-card { padding: 44px clamp(28px, 8vw, 78px); }
+}
+
+@media (max-width: 720px) {
+  .access-page { padding: 0; background: linear-gradient(155deg, #062e59 0%, #0873a5 55%, #0b92bb 100%); }
+  .access-shell { width: 100%; border: 0; border-radius: 0; box-shadow: none; }
+  .access-hero { min-height: 338px; padding: 25px 22px 30px; }
+  .access-hero-brand img { width: 88px; height: 54px; }
+  .access-hero-brand span { font-size: 1.05rem; }
+  .access-hero-copy { padding: 35px 0 28px; }
+  .access-kicker { margin-bottom: 15px; padding: 7px 10px; font-size: .62rem; }
+  .access-hero-copy h2 { max-width: 440px; font-size: clamp(2.35rem, 12vw, 3.35rem); line-height: .98; }
+  .access-hero-copy h2 em { display: block; }
+  .access-hero-copy > p { margin-top: 18px; font-size: .91rem; line-height: 1.55; }
+  .access-hero-highlights { display: none; }
+  .access-card { min-height: calc(100vh - 338px); padding: 34px 22px calc(34px + env(safe-area-inset-bottom)); border-radius: 28px 28px 0 0; box-shadow: 0 -18px 44px #0420392c; }
+  .access-card-head { margin-bottom: 24px; }
+  .access-icon { width: 52px; height: 52px; margin-bottom: 18px; border-radius: 16px; }
+  .access-card h1 { font-size: clamp(1.9rem, 9vw, 2.35rem); }
+  .access-card-head > p { font-size: .9rem; }
+  .admin-entry-back { align-items: center; flex-direction: row; }
 }

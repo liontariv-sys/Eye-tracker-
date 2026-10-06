@@ -1,8 +1,9 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { Eye, KeyRound, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Eye, KeyRound, LockKeyhole, Mail, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -30,19 +31,26 @@ export default function AdminLogin() {
     }
   };
 
-  return <main className="access-page"><section className="access-card">
-    <div className="access-brand"><span><Eye /></span><div><strong>LPNeC Oculab</strong><small>Laboratório de Percepção, Neurociências e Comportamento · UFPB</small></div></div>
-    <div className="access-icon"><ShieldCheck /></div>
-    <h1>Área administrativa</h1>
-    <p>Entre com o e-mail do administrador e a senha configurada com segurança no Cloudflare.</p>
+  return <main className="access-page">
+    <div className="access-orb access-orb-one" aria-hidden="true" /><div className="access-orb access-orb-two" aria-hidden="true" />
+    <section className="access-shell">
+      <aside className="access-hero">
+        <div className="access-hero-brand"><Image src="/brand/lpnec-logo-transparent.png" alt="LPNeC" width={132} height={82} priority /><span>Oculab</span></div>
+        <div className="access-hero-copy"><span className="access-kicker"><Sparkles /> Gestão segura</span><h2>Controle de acesso com <em>simplicidade.</em></h2><p>Aprove solicitações e mantenha o ambiente do laboratório organizado em um só lugar.</p></div>
+        <div className="access-hero-highlights"><div><span><Eye /></span><p><strong>Visão centralizada</strong><small>Pedidos e acessos reunidos.</small></p></div><div><span><ShieldCheck /></span><p><strong>Ambiente protegido</strong><small>Entrada exclusiva do administrador.</small></p></div></div>
+      </aside>
+      <section className="access-card">
+        <div className="access-card-head"><div className="access-icon"><ShieldCheck /></div><span className="access-card-kicker">Acesso restrito</span><h1>Área administrativa</h1><p>Entre com suas credenciais para gerenciar as autorizações do Oculab.</p></div>
     <form className="access-request-form" onSubmit={submit}>
       <label htmlFor="admin-email">E-mail do administrador</label>
-      <div className="access-email-field"><Mail /><input id="admin-email" type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="seuemail@exemplo.com" required /></div>
-      <label htmlFor="admin-password">Senha administrativa</label>
-      <div className="access-email-field"><LockKeyhole /><input id="admin-password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Sua senha administrativa" required /></div>
+      <div className="access-email-field"><Mail /><input id="admin-email" type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="nome@exemplo.com" required /></div>
+      <label htmlFor="admin-password">Senha</label>
+      <div className="access-email-field"><LockKeyhole /><input id="admin-password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Digite sua senha" required /></div>
       <button className="access-primary" type="submit" disabled={loading}><KeyRound /> {loading ? "Verificando…" : "Entrar como administrador"}</button>
     </form>
     {message && <p className="access-message" role="alert">{message}</p>}
-    <div className="admin-entry"><Link href="/">Voltar à entrada do Oculab</Link></div>
-  </section></main>;
+        <div className="admin-entry admin-entry-back"><CheckCircle2 /><Link href="/">Voltar à entrada do Oculab</Link></div>
+      </section>
+    </section>
+  </main>;
 }

@@ -3,7 +3,9 @@ name: Organizar codigo-fonte do Oculab
 on:
   push:
     paths:
+      - "LPNeC-Oculab-Cloudflare.zip"
       - ".github/workflows/unpack-oculab.yml"
+  workflow_dispatch:
 
 permissions:
   contents: write

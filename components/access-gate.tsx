@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { CheckCircle2, Clock3, Eye, KeyRound, LockKeyhole, Mail, RefreshCw, ShieldCheck, Sparkles, XCircle } from "lucide-react";
+import { Clock3, KeyRound, LockKeyhole, Mail, RefreshCw, ShieldCheck, Sparkles, XCircle } from "lucide-react";
 import Image from "next/image";
 
 type Props = { email?: string; status?: "none" | "pending" | "denied"; adminHref: string };
@@ -78,11 +78,6 @@ export default function AccessGate({ email = "", status = "none", adminHref }: P
         <div className="access-hero-copy">
           <span className="access-kicker"><Sparkles /> Tecnologia para pesquisa</span>
           <h2>Dados oculares com <em>clareza e precisão.</em></h2>
-          <p>Da planilha bruta à base pronta para análise, com um fluxo simples para pesquisadores do LPNeC.</p>
-        </div>
-        <div className="access-hero-highlights">
-          <div><span><Eye /></span><p><strong>Fluxo intuitivo</strong><small>Importe, configure e revise.</small></p></div>
-          <div><span><ShieldCheck /></span><p><strong>Acesso controlado</strong><small>Somente pessoas autorizadas.</small></p></div>
         </div>
       </aside>
       <section className="access-card">
@@ -107,7 +102,6 @@ export default function AccessGate({ email = "", status = "none", adminHref }: P
 
     {message && <p className="access-message" role="status">{message}</p>}
     <div className="admin-entry"><div><ShieldCheck /><span><strong>Área administrativa</strong><small>Acesso exclusivo do administrador.</small></span></div><a href={adminHref}>Entrar como administrador</a></div>
-        <div className="access-privacy"><CheckCircle2 /><span>Seu acesso fica salvo neste navegador. Os arquivos são processados no próprio dispositivo.</span></div>
       </section>
     </section>
   </main>;

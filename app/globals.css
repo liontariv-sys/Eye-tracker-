@@ -18,7 +18,7 @@
 .access-hero::before { position: absolute; width: 470px; height: 470px; right: -225px; bottom: -180px; content: ""; border-radius: 50%; border: 70px solid #68e0d31a; box-shadow: 0 0 0 54px #a8ffb20b; }
 .access-hero::after { position: absolute; right: 9%; bottom: 16%; width: 118px; height: 118px; content: ""; opacity: .55; background: radial-gradient(circle, #8affdf 2px, transparent 2.5px); background-size: 16px 16px; }
 .access-hero-brand { position: relative; z-index: 1; display: flex; align-items: center; gap: 4px; }
-.access-hero-brand img { width: 110px; height: 68px; object-fit: contain; filter: brightness(0) invert(1) drop-shadow(0 8px 18px #001c3290); }
+.access-hero-brand img { width: 110px; height: 68px; object-fit: contain; filter: drop-shadow(0 8px 18px #001c3290); }
 .access-hero-brand span { margin-left: -9px; padding-left: 15px; color: #e7fffb; font-size: 1.25rem; font-weight: 750; border-left: 1px solid #cbfff071; }
 .access-hero-copy { position: relative; z-index: 1; max-width: 530px; margin: auto 0; padding: clamp(48px, 9vh, 100px) 0; }
 .access-kicker { width: fit-content; display: flex; align-items: center; gap: 8px; margin-bottom: 22px; padding: 8px 13px; color: #d9fff8; font-size: .71rem; font-weight: 800; text-transform: uppercase; letter-spacing: .13em; border: 1px solid #a1f8e96e; border-radius: 999px; background: #d7fff10d; }

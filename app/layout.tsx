@@ -40,9 +40,6 @@ export const metadata: Metadata = {
     description: "Organize, limpe, audite e exporte dados de eye tracking para pesquisa científica.",
     images: ["/icon-512.png"],
   },
-  other: {
-    "codex-preview": "development",
-  },
   icons: {
     icon: [
       { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },

@@ -15,6 +15,9 @@ import {
   FileCheck2,
   Gauge,
   GripVertical,
+  Home,
+  Eye,
+  Cpu,
   Layers3,
   LogOut,
   Plus,
@@ -22,7 +25,6 @@ import {
   ShieldCheck,
   Sigma,
   Sparkles,
-  TableProperties,
   Trash2,
   UploadCloud,
 } from "lucide-react";
@@ -106,6 +108,11 @@ const steps = [
   { id: 4, label: "Revisar resultados", icon: BarChart3 },
 ];
 
+const navigationItems = [
+  { id: 0, label: "Início", icon: Home },
+  ...steps,
+];
+
 const chartMetricOptions: Array<{ key: string; metric: MetricKey; label: string; shortLabel: string; unit: (durationUnit: string) => string }> = [
   { key: "N_Fixacoes", metric: "fixationCount", label: "Número médio de fixações", shortLabel: "Fixações", unit: () => "eventos" },
   { key: "N_Sacadas", metric: "saccadeCount", label: "Número médio de sacadas", shortLabel: "Sacadas", unit: () => "eventos" },
@@ -141,7 +148,7 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
   const fileInput = useRef<HTMLInputElement>(null);
   const presetInput = useRef<HTMLInputElement>(null);
   const pointerDragId = useRef<string | null>(null);
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0);
   const [datasets, setDatasets] = useState<UploadedDataset[]>([]);
   const [activeDatasetId, setActiveDatasetId] = useState("");
   const [metrics, setMetrics] = useState(defaultMetrics);
@@ -170,6 +177,7 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
   const allMappingsReady = datasets.length > 0 && datasets.every((dataset) => dataset.mapping.eventType && dataset.fixationLabel.trim() && dataset.saccadeLabel.trim());
   const selectedMetricCount = Object.values(metrics).filter(Boolean).length + customVariables.length;
   const phase3Selected = Boolean(outputSheets.participantSummary || outputSheets.analysisMatrix);
+  const currentNavigationItem = navigationItems.find((item) => item.id === step) ?? navigationItems[0];
 
   const makeDataset = (name: string, sheet: WorkbookSheet, sheets: WorkbookSheet[]): UploadedDataset => {
     const id = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
@@ -493,28 +501,24 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
           </div>
           <div className="brand-copy"><strong>LPNeC <span>Oculab</span></strong><small>Percepção · Neurociências · UFPB</small></div>
         </div>
-        <nav aria-label="Etapas da tabulação">
-          {steps.map(({ id, label, icon: Icon }) => (
+        <nav aria-label="Navegação do Oculab">
+          {navigationItems.map(({ id, label, icon: Icon }) => (
             <button key={id} onClick={() => id <= (datasets.length ? 4 : 1) && setStep(id)} className={step === id ? "step active" : "step"} disabled={id > 1 && !datasets.length}>
-              <span className="step-icon">{id < step ? <Check size={17} /> : <Icon size={17} />}</span>
-              <span className="step-copy"><small>Etapa {String(id).padStart(2, "0")}</small><strong>{label}</strong></span>
+              <span className="step-icon">{id > 0 && id < step ? <Check size={17} /> : <Icon size={17} />}</span>
+              <span className="step-copy"><small>{id === 0 ? "Conheça" : `Etapa ${String(id).padStart(2, "0")}`}</small><strong>{label}</strong></span>
               {step === id && <ChevronRight size={16} className="step-arrow" />}
             </button>
           ))}
         </nav>
-        <div className="sidebar-note">
-          <ShieldCheck size={18} />
-          <div><strong>Processamento local</strong><p>Os dados permanecem neste dispositivo.</p></div>
-        </div>
       </aside>
 
       <main className="workspace">
         <header className="topbar">
           <div className="topbar-heading">
-            <span className="topbar-step" aria-hidden="true">{String(step).padStart(2, "0")}</span>
+            <span className="topbar-step" aria-hidden="true">{step === 0 ? <Home /> : String(step).padStart(2, "0")}</span>
             <div>
               <p className="eyebrow">Laboratório de Percepção, Neurociências e Comportamento · UFPB</p>
-              <h1>{steps[step - 1].label}</h1>
+              <h1>{currentNavigationItem.label}</h1>
             </div>
           </div>
           <nav className="topbar-actions" aria-label="Ações da conta">
@@ -526,12 +530,76 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
 
         {error && <div className="error-banner" role="alert"><CircleAlert size={19} /><span>{error}</span><button onClick={() => setError("")}>Fechar</button></div>}
 
+        {step === 0 && (
+          <section className="stage home-stage">
+            <div className="home-hero">
+              <div className="home-hero-copy">
+                <span className="home-kicker">LPNeC · UFPB</span>
+                <h2>Dados de eye tracking organizados para pesquisa.</h2>
+                <p>O LPNeC Oculab apoia pesquisadores na preparação de dados oculomotores, desde a importação dos arquivos brutos até a exportação de planilhas prontas para revisão e análise estatística.</p>
+                <div className="home-actions">
+                  <Button size="lg" onClick={() => setStep(1)}>Começar tabulação <ChevronRight /></Button>
+                  <button type="button" className="home-text-link" onClick={() => document.getElementById("como-usar")?.scrollIntoView({ behavior: "smooth" })}>Ver como funciona</button>
+                </div>
+              </div>
+              <div className="home-hero-mark" aria-hidden="true">
+                <Eye />
+                <span>Dados brutos</span>
+                <ChevronRight />
+                <strong>Excel organizado</strong>
+              </div>
+            </div>
+
+            <div className="home-purpose-grid" aria-label="Principais recursos">
+              <article><span><Layers3 /></span><div><strong>Estrutura flexível</strong><p>Mapeia diferentes nomes de colunas e formatos de planilha.</p></div></article>
+              <article><span><Sigma /></span><div><strong>Tabulação orientada</strong><p>Calcula somente as variáveis selecionadas pelo pesquisador.</p></div></article>
+              <article><span><BarChart3 /></span><div><strong>Saída para análise</strong><p>Gera tabelas para conferência, SPSS, JASP e Excel.</p></div></article>
+            </div>
+
+            <div className="home-information-grid">
+              <article className="home-info-card">
+                <span className="home-section-label">Sobre o projeto</span>
+                <h3>Uma ferramenta criada a partir das rotinas de pesquisa do LPNeC.</h3>
+                <p>O Oculab surgiu da necessidade de reduzir etapas manuais na organização de dados de rastreamento ocular e tornar o processo mais claro, reproduzível e adaptável a diferentes estudos.</p>
+                <p>Seu foco é apoiar a limpeza, a tabulação, a auditoria e a preparação de bases para análises posteriores.</p>
+              </article>
+              <article className="home-info-card privacy-card">
+                <span className="home-info-icon"><Cpu /></span>
+                <div><span className="home-section-label">Funcionamento dos dados</span><h3>Processamento realizado no navegador</h3><p>As planilhas brutas são processadas no dispositivo em uso e não são enviadas ao servidor do Oculab. Ao fechar ou atualizar a página, o lote precisa ser importado novamente.</p></div>
+              </article>
+            </div>
+
+            <section className="home-flow" id="como-usar">
+              <div className="home-section-heading"><span className="home-section-label">Como utilizar</span><h3>Da planilha bruta ao arquivo final em quatro etapas</h3><p>A navegação acompanha o fluxo real da ferramenta.</p></div>
+              <div className="home-flow-grid">
+                {steps.map(({ id, label, icon: Icon }, index) => (
+                  <button type="button" key={id} onClick={() => id <= (datasets.length ? 4 : 1) && setStep(id)} disabled={id > 1 && !datasets.length}>
+                    <span className="home-flow-number">{String(id).padStart(2, "0")}</span>
+                    <span className="home-flow-icon"><Icon /></span>
+                    <strong>{label}</strong>
+                    <p>{[
+                      "Selecione uma ou mais planilhas e identifique participantes e grupos.",
+                      "Relacione os campos do arquivo às informações usadas pelo Oculab.",
+                      "Escolha variáveis, unidades, desenho do estudo e formato de saída.",
+                      "Confira tabelas, gráficos e auditoria antes de baixar o Excel.",
+                    ][index]}</p>
+                    {index < steps.length - 1 && <ChevronRight className="home-flow-arrow" />}
+                  </button>
+                ))}
+              </div>
+              {!datasets.length && <p className="home-flow-note">As etapas seguintes serão liberadas depois que pelo menos um arquivo for importado.</p>}
+            </section>
+
+            <footer className="home-credits">
+              <div><span className="home-section-label">Desenvolvimento</span><strong>Vinícius Freitas Barbosa da Silva</strong><p>Projeto desenvolvido no contexto das atividades de pesquisa do Laboratório de Percepção, Neurociências e Comportamento — LPNeC/UFPB.</p></div>
+              <Button variant="outline" onClick={() => setStep(1)}>Importar dados <UploadCloud /></Button>
+            </footer>
+          </section>
+        )}
+
         {step === 1 && (
           <section className="stage import-stage">
-            <div className="welcome-panel">
-              <div className="welcome-copy"><h2>Do dado bruto à planilha pronta para pesquisa.</h2><p>O LPNeC Oculab organiza arquivos de eye tracking, calcula apenas as variáveis que você escolher e entrega um Excel claro para revisão ou análise estatística.</p></div>
-              <div className="welcome-outcome"><span><FileCheck2 /></span><div><strong>Você escolhe o que entra.</strong><p>Formatos, variáveis e estrutura final se adaptam ao desenho do estudo.</p></div></div>
-            </div>
+            <div className="import-intro"><div><h2>Adicione as planilhas que deseja tabular</h2><p>Você pode importar um ou vários arquivos. Depois, identifique o participante, o grupo e a unidade de duração de cada planilha.</p></div><Badge variant="outline">Excel · CSV · TSV · ODS</Badge></div>
             <button className="dropzone" onClick={() => fileInput.current?.click()} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); void onFiles(event.dataTransfer.files); }}>
               <span className="upload-orbit"><UploadCloud size={30} /></span>
               <strong>Selecione uma ou várias planilhas brutas</strong>
@@ -560,12 +628,6 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
               <div className="batch-footer"><span>A ordem acima será repetida nas fases 1 e 2. A fase 3 reunirá todos os participantes em uma única base.</span><Button onClick={() => { setActiveDatasetId(datasets[0].id); setStep(2); }}>Mapear colunas <ChevronRight /></Button></div>
             </div>}
             <div className="demo-row"><div><Sparkles size={17} /><span><strong>Primeira vez aqui?</strong> Teste um lote com dois participantes sem precisar de arquivo próprio.</span></div><Button variant="outline" onClick={useDemo}>Usar lote de exemplo</Button></div>
-            <div className="journey-title"><span>Um lote, três entregas</span><p>Cada fase reúne os arquivos sem perder a origem de cada resultado.</p></div>
-            <div className="product-journey">
-              <div><span className="journey-number">1</span><TableProperties /><strong>Rastreio organizado</strong><p>Eventos separados por estímulo e somente com as variáveis escolhidas.</p></div>
-              <div><span className="journey-number">2</span><Sigma /><strong>Resumo dos estímulos</strong><p>Totais, médias e desvios-padrão prontos para conferir.</p></div>
-              <div><span className="journey-number">3</span><BarChart3 /><strong>Base para SPSS/JASP</strong><p>Dados longos ou amplos, com ausências preservadas corretamente.</p></div>
-            </div>
           </section>
         )}
 

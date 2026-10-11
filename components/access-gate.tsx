@@ -117,7 +117,7 @@ export default function AccessGate({ email = "", status = "none", adminHref }: P
     </form>}
 
     {message && <p className="access-message" role="status">{message}</p>}
-    <div className="admin-entry"><div><ShieldCheck /><span><strong>Área administrativa</strong><small>Acesso exclusivo do administrador.</small></span></div><a href={adminHref}>Entrar como administrador</a></div>
+    <div className="admin-entry"><ShieldCheck aria-hidden="true" /><a href={adminHref}>Administração</a></div>
       </section>
     </section>
 
@@ -130,11 +130,6 @@ export default function AccessGate({ email = "", status = "none", adminHref }: P
         <p>O LPNeC Oculab nasceu no Laboratório de Percepção, Neurociências e Comportamento da UFPB para reduzir o trabalho manual envolvido na preparação de dados de eye tracking. Ele organiza em um mesmo percurso tarefas que costumavam exigir sucessivas planilhas, conferências e cálculos separados.</p>
         <p>O pesquisador continua no controle: relaciona as colunas do arquivo bruto, escolhe as variáveis de interesse e define a estrutura da saída. Assim, a ferramenta se adapta a estudos transversais ou longitudinais e a arquivos com nomes de campos diferentes, sem impor um único modelo de pesquisa.</p>
         <p>O objetivo não é substituir decisões metodológicas. É tornar a limpeza, a tabulação e a auditoria mais transparentes, rastreáveis e fáceis de revisar antes que os dados sigam para Excel, JASP ou SPSS.</p>
-        <div className="access-principles" aria-label="Princípios do Oculab">
-          <div><strong>Flexível</strong><span>para diferentes tarefas e formatos</span></div>
-          <div><strong>Rastreável</strong><span>para conferir o que foi calculado</span></div>
-          <div><strong>Reprodutível</strong><span>para repetir escolhas com consistência</span></div>
-        </div>
       </div>
     </section>
 
@@ -186,7 +181,7 @@ export default function AccessGate({ email = "", status = "none", adminHref }: P
         </article>
         <article className="access-team-profile">
           <div className="access-team-photo access-team-photo-gabriella"><Image src="/team-gabriella.jpg?v=2" alt="Gabriella Medeiros Silva" fill sizes="(max-width: 760px) 88vw, 31vw" unoptimized /></div>
-          <div className="access-team-copy"><span>Pesquisa e colaboração científica</span><h3>Gabriella Medeiros Silva</h3><p>Psicóloga, mestra e doutora em Psicologia Social pela UFPB, especialista em Neurociência do Desenvolvimento Humano e integrante do LPNeC. Pesquisa funções perceptuais e cognitivas com medidas psicofísicas, psicofisiológicas e eletrofisiológicas.</p></div>
+          <div className="access-team-copy"><span>Pesquisa e colaboração científica</span><h3>Gabriella Medeiros Silva</h3><p>Psicóloga, doutora em Psicologia Social pela UFPB, especialista em Neurociência do Desenvolvimento Humano e integrante do LPNeC. Pesquisa funções perceptuais e cognitivas com medidas psicofísicas, psicofisiológicas e eletrofisiológicas.</p></div>
         </article>
       </div>
     </section>

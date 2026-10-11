@@ -2,6 +2,14 @@
 @import "tw-animate-css";
 @import "../vendor/shadcn-tailwind-4.13.0.css";
 
+@font-face {
+  font-family: "Geist LPNeC";
+  src: url("/fonts/geist-lpnec.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
 @utility scrollbar-thin {
   scrollbar-width: thin;
 }
@@ -46,6 +54,8 @@
   --lpnec-coral: #ff7e5f;
   --lpnec-body: #333333;
   --radius: 0.75rem;
+  --font-body: "Geist LPNeC", Inter, "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  --font-display: "Geist LPNeC", Inter, "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
 }
 
 @theme inline {
@@ -76,13 +86,52 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --font-sans: Inter, "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  --font-sans: var(--font-body);
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--background); color: var(--foreground); font-family: var(--font-sans); font-synthesis: none; }
-h1, h2, h3, h4, h5, h6 { font-family: var(--font-sans); }
+body { margin: 0; background: var(--background); color: var(--foreground); font-family: var(--font-body); font-synthesis: none; }
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); font-optical-sizing: auto; }
 button, input, textarea { font: inherit; }
+
+/* A área de trabalho usa uma hierarquia tipográfica única. Os componentes de
+   interface continuam discretos; títulos e nomes de seções recebem mais
+   contraste sem recorrer a fontes diferentes em cada etapa. */
+.app-shell { font-family: var(--font-body); }
+.workspace :where(h1, h2, h3),
+.workspace [data-slot="card-title"],
+.workspace .section-intro strong,
+.workspace .journey-title span,
+.workspace .preview-title strong,
+.workspace .tab-heading strong,
+.workspace .batch-heading strong,
+.workspace .format-top strong,
+.workspace .metric-row strong {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+}
+.workspace [data-slot="card-title"],
+.section-heading h2,
+.stage-toolbar h2,
+.import-intro h2 {
+  color: #153743;
+  font-weight: 720;
+  line-height: 1.12;
+  letter-spacing: -.025em;
+  text-wrap: balance;
+}
+.workspace [data-slot="card-description"],
+.section-heading p,
+.stage-toolbar p,
+.field-help,
+.mapping-card p,
+.format-top small,
+.metric-row span,
+.tab-heading span {
+  font-family: var(--font-body);
+  font-weight: 400;
+  letter-spacing: 0;
+}
 
 .app-shell { min-height: 100vh; display: grid; grid-template-columns: 254px minmax(0, 1fr); }
 .sidebar { position: sticky; top: 0; height: 100vh; padding: 24px 18px; display: flex; flex-direction: column; color: #d9eeea; background: radial-gradient(circle at 12% 3%, #1b4e4a 0, transparent 31%), radial-gradient(circle at 92% 78%, #66d0c617 0 2px, transparent 3px), linear-gradient(165deg, #0c1d2a 0%, #102735 60%, #12352f 100%); background-size: auto, 32px 32px, auto; border-right: 1px solid #24433f; }

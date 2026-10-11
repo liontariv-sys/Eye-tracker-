@@ -63,31 +63,31 @@ type UploadedDataset = {
 };
 
 const mappingFields: Array<{ key: FieldKey; label: string; hint: string; required?: boolean }> = [
-  { key: "participant", label: "Participante", hint: "Identificador do sujeito" },
-  { key: "group", label: "Grupo", hint: "Condição ou grupo experimental" },
-  { key: "moment", label: "Momento", hint: "Etapa ou ocasião da coleta" },
-  { key: "stimulus", label: "Estímulo", hint: "Mídia, cena ou tarefa" },
-  { key: "trial", label: "Tentativa", hint: "Bloco ou repetição" },
-  { key: "aoi", label: "Área de interesse", hint: "AOI, quando disponível" },
-  { key: "eventType", label: "Tipo de evento", hint: "Coluna que classifica fixações e sacadas", required: true },
-  { key: "fixationId", label: "ID da fixação", hint: "Número ou código da fixação" },
-  { key: "saccadeId", label: "ID da sacada", hint: "Número ou código da sacada" },
-  { key: "duration", label: "Duração do evento", hint: "Tempo registrado para o evento" },
-  { key: "amplitude", label: "Amplitude sacádica", hint: "Valor de amplitude da sacada" },
-  { key: "pupilLeft", label: "Pupila esquerda", hint: "Medida do olho esquerdo" },
-  { key: "pupilRight", label: "Pupila direita", hint: "Medida do olho direito" },
-  { key: "timestamp", label: "Timestamp", hint: "Opcional; ordem das linhas é preservada" },
+  { key: "participant", label: "Participante", hint: "Coluna com o código ou nome de cada participante" },
+  { key: "group", label: "Grupo", hint: "Coluna com a condição ou o grupo de pesquisa" },
+  { key: "moment", label: "Momento", hint: "Coluna com a etapa da coleta, como pré ou pós-teste" },
+  { key: "stimulus", label: "Estímulo", hint: "Coluna que identifica cada imagem, slide, cena ou tarefa" },
+  { key: "trial", label: "Tentativa", hint: "Coluna que diferencia blocos, ensaios ou repetições" },
+  { key: "aoi", label: "Área de interesse", hint: "Coluna com o nome da AOI, se o estudo utilizar áreas de interesse" },
+  { key: "eventType", label: "Tipo de evento", hint: "Coluna cujas células informam se a linha é fixação ou sacada", required: true },
+  { key: "fixationId", label: "ID da fixação", hint: "Coluna que repete o mesmo identificador nas amostras da fixação" },
+  { key: "saccadeId", label: "ID da sacada", hint: "Coluna que repete o mesmo identificador nas amostras da sacada" },
+  { key: "duration", label: "Duração do evento", hint: "Coluna com a duração de cada fixação ou sacada" },
+  { key: "amplitude", label: "Amplitude sacádica", hint: "Coluna com a amplitude de cada sacada" },
+  { key: "pupilLeft", label: "Pupila esquerda", hint: "Coluna com a medida pupilar do olho esquerdo" },
+  { key: "pupilRight", label: "Pupila direita", hint: "Coluna com a medida pupilar do olho direito" },
+  { key: "timestamp", label: "Tempo ou timestamp", hint: "Opcional; se não for mapeado, será usada a ordem original das linhas" },
 ];
 
 const metricFields: Array<{ key: MetricKey; label: string; detail: string }> = [
-  { key: "fixationCount", label: "Número de fixações", detail: "Eventos únicos, não amostras" },
-  { key: "saccadeCount", label: "Número de sacadas", detail: "Eventos únicos por estímulo" },
-  { key: "fixationDuration", label: "Duração das fixações", detail: "Média e desvio-padrão" },
-  { key: "saccadeDuration", label: "Duração das sacadas", detail: "Todas as sacadas válidas do estímulo" },
-  { key: "saccadicAmplitude", label: "Amplitude sacádica", detail: "Origem automática ou definida pelo pesquisador" },
-  { key: "pupilLeft", label: "Pupila esquerda", detail: "≤ 0 é convertido em ausente" },
-  { key: "pupilRight", label: "Pupila direita", detail: "≤ 0 é convertido em ausente" },
-  { key: "pupilBinocular", label: "Pupila binocular", detail: "Média dos olhos válidos" },
+  { key: "fixationCount", label: "Número de fixações", detail: "Conta cada ID de fixação uma única vez" },
+  { key: "saccadeCount", label: "Número de sacadas", detail: "Conta todas as sacadas válidas de cada estímulo" },
+  { key: "fixationDuration", label: "Duração das fixações", detail: "Inclui duração média e desvio-padrão" },
+  { key: "saccadeDuration", label: "Duração das sacadas", detail: "Inclui todas as sacadas válidas, mesmo sem fixação pareada" },
+  { key: "saccadicAmplitude", label: "Amplitude sacádica", detail: "Inclui amplitude média e desvio-padrão" },
+  { key: "pupilLeft", label: "Pupila esquerda", detail: "Valores iguais ou menores que zero serão tratados como ausentes" },
+  { key: "pupilRight", label: "Pupila direita", detail: "Valores iguais ou menores que zero serão tratados como ausentes" },
+  { key: "pupilBinocular", label: "Pupila binocular", detail: "Calcula a média entre os olhos que possuem valor válido" },
 ];
 
 const defaultMetrics: Record<MetricKey, boolean> = {
@@ -599,15 +599,15 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
 
         {step === 1 && (
           <section className="stage import-stage">
-            <div className="import-intro"><div><h2>Adicione as planilhas que deseja tabular</h2><p>Você pode importar um ou vários arquivos. Depois, identifique o participante, o grupo e a unidade de duração de cada planilha.</p></div><Badge variant="outline">Excel · CSV · TSV · ODS</Badge></div>
+            <div className="import-intro"><div><h2>Adicione as planilhas que deseja tabular</h2><p>Importe um ou vários arquivos. Para cada um, confirme o participante, o grupo e a unidade usada nas durações.</p></div><Badge variant="outline">Excel · CSV · TSV · ODS</Badge></div>
             <button className="dropzone" onClick={() => fileInput.current?.click()} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); void onFiles(event.dataTransfer.files); }}>
               <span className="upload-orbit"><UploadCloud size={30} /></span>
               <strong>Selecione uma ou várias planilhas brutas</strong>
-              <span>Excel, CSV, TSV ou OpenDocument · todos os arquivos entram no mesmo lote</span>
+              <span>Os arquivos serão processados juntos e organizados na ordem escolhida por você</span>
               <input ref={fileInput} type="file" multiple accept=".csv,.tsv,.xls,.xlsx,.xlsm,.xlsb,.ods" hidden onChange={(event) => void onFiles(event.target.files ?? undefined)} />
             </button>
             {datasets.length > 0 && <div className="batch-panel">
-              <div className="batch-heading"><div><Badge>{datasets.length}</Badge><div><strong>{datasets.length === 1 ? "arquivo anexado" : "arquivos anexados"}</strong><span>Defina participante e grupo. Arraste a alça para escolher a ordem no Excel.</span></div></div><Button variant="outline" size="sm" onClick={() => fileInput.current?.click()}><UploadCloud /> Adicionar arquivos</Button></div>
+              <div className="batch-heading"><div><Badge>{datasets.length}</Badge><div><strong>{datasets.length === 1 ? "arquivo anexado" : "arquivos anexados"}</strong><span>Revise os dados de identificação. Arraste a alça numerada ou use as setas para mudar a ordem no Excel.</span></div></div><Button variant="outline" size="sm" onClick={() => fileInput.current?.click()}><UploadCloud /> Adicionar arquivos</Button></div>
               <div className="file-queue">
                 {datasets.map((dataset, index) => (
                   <div className="file-queue-item" data-dataset-id={dataset.id} key={dataset.id} onDragOver={(event) => event.preventDefault()} onDrop={() => { if (pointerDragId.current) moveDataset(pointerDragId.current, dataset.id); pointerDragId.current = null; }}>
@@ -615,9 +615,9 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
                     <div className="file-queue-main">
                       <div className="file-queue-title"><FileSpreadsheet /><div><strong>{dataset.fileName}</strong><span>{dataset.rows.length.toLocaleString("pt-BR")} linhas · {dataset.sheetName}</span></div><Badge variant={dataset.mapping.eventType ? "outline" : "secondary"}>{dataset.mapping.eventType ? "colunas reconhecidas" : "revisar colunas"}</Badge></div>
                       <div className="file-metadata-grid">
-                        <div><Label htmlFor={`participant-${dataset.id}`}>Participante</Label><Input id={`participant-${dataset.id}`} value={dataset.participantOverride} onChange={(event) => patchDataset(dataset.id, { participantOverride: event.target.value })} placeholder={dataset.mapping.participant ? `Vazio = usar ${dataset.mapping.participant}` : `Vazio = usar ${fileStem(dataset.fileName)}`} /></div>
-                        <div><Label htmlFor={`group-${dataset.id}`}>Grupo</Label><Input id={`group-${dataset.id}`} list="oculab-groups" value={dataset.groupOverride} onChange={(event) => patchDataset(dataset.id, { groupOverride: event.target.value })} placeholder={dataset.mapping.group ? `Vazio = usar ${dataset.mapping.group}` : "Ex.: Controle ou Experimental"} /><small>Será a variável Grupo na fase 3.</small></div>
-                        <div><Label>Unidade da duração</Label><Select value={dataset.durationUnit} onValueChange={(value) => patchDataset(dataset.id, { durationUnit: value as "ms" | "s" })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="ms">Milissegundos</SelectItem><SelectItem value="s">Segundos</SelectItem></SelectContent></Select>{dataset.durationDetection && <small>detectada: {dataset.durationDetection}</small>}</div>
+                        <div><Label htmlFor={`participant-${dataset.id}`}>Participante</Label><Input id={`participant-${dataset.id}`} value={dataset.participantOverride} onChange={(event) => patchDataset(dataset.id, { participantOverride: event.target.value })} placeholder={dataset.mapping.participant ? `Vazio = usar a coluna ${dataset.mapping.participant}` : `Vazio = usar ${fileStem(dataset.fileName)}`} /><small>Este identificador aparecerá em todas as fases do Excel.</small></div>
+                        <div><Label htmlFor={`group-${dataset.id}`}>Grupo</Label><Input id={`group-${dataset.id}`} list="oculab-groups" value={dataset.groupOverride} onChange={(event) => patchDataset(dataset.id, { groupOverride: event.target.value })} placeholder={dataset.mapping.group ? `Vazio = usar a coluna ${dataset.mapping.group}` : "Ex.: Grupo controle"} /><small>O grupo acompanhará o participante na base para SPSS/JASP.</small></div>
+                        <div><Label>Como a duração está gravada?</Label><Select value={dataset.durationUnit} onValueChange={(value) => patchDataset(dataset.id, { durationUnit: value as "ms" | "s" })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="ms">Milissegundos (ex.: 250)</SelectItem><SelectItem value="s">Segundos (ex.: 0,25)</SelectItem></SelectContent></Select><small>{dataset.durationDetection ? `O Oculab sugeriu ${dataset.durationDetection === "ms" ? "milissegundos" : "segundos"}; confirme antes de continuar.` : "Escolha a unidade usada nos valores deste arquivo."}</small></div>
                       </div>
                     </div>
                     <div className="file-queue-actions"><Button variant="ghost" size="icon" onClick={() => nudgeDataset(dataset.id, -1)} disabled={index === 0} aria-label="Mover para cima"><ArrowUp /></Button><Button variant="ghost" size="icon" onClick={() => nudgeDataset(dataset.id, 1)} disabled={index === datasets.length - 1} aria-label="Mover para baixo"><ArrowDown /></Button><Button variant="ghost" size="icon" className="remove-file" onClick={() => removeDataset(dataset.id)} aria-label="Remover arquivo"><Trash2 /></Button></div>
@@ -625,7 +625,7 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
                 ))}
               </div>
               <datalist id="oculab-groups">{Array.from(new Set(["Grupo controle", "Grupo experimental", ...batchGroups])).map((group) => <option value={group} key={group} />)}</datalist>
-              <div className="batch-footer"><span>A ordem acima será repetida nas fases 1 e 2. A fase 3 reunirá todos os participantes em uma única base.</span><Button onClick={() => { setActiveDatasetId(datasets[0].id); setStep(2); }}>Mapear colunas <ChevronRight /></Button></div>
+              <div className="batch-footer"><span><strong>No Excel final:</strong> as fases 1 e 2 seguirão esta ordem; a fase 3 reunirá os participantes em uma única tabela.</span><Button onClick={() => { setActiveDatasetId(datasets[0].id); setStep(2); }}>Mapear colunas <ChevronRight /></Button></div>
             </div>}
             <div className="demo-row"><div><Sparkles size={17} /><span><strong>Primeira vez aqui?</strong> Teste um lote com dois participantes sem precisar de arquivo próprio.</span></div><Button variant="outline" onClick={useDemo}>Usar lote de exemplo</Button></div>
           </section>
@@ -633,10 +633,10 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
 
         {step === 2 && (
           <section className="stage">
-            <div className="stage-toolbar"><div><h2>Mapeamento por arquivo</h2><p>Relacione cada informação à coluna correspondente. Os menus mostram os nomes reais encontrados em cada planilha.</p></div><Badge variant={allMappingsReady ? "default" : "secondary"}>{datasets.filter((dataset) => dataset.mapping.eventType && dataset.fixationLabel.trim() && dataset.saccadeLabel.trim()).length} de {datasets.length} arquivos prontos</Badge></div>
+            <div className="stage-toolbar"><div><h2>Mapeamento por arquivo</h2><p>Em cada campo, selecione a coluna do arquivo bruto que contém aquela informação. Se a informação não existir, mantenha “Não mapear”.</p></div><Badge variant={allMappingsReady ? "default" : "secondary"}>{datasets.filter((dataset) => dataset.mapping.eventType && dataset.fixationLabel.trim() && dataset.saccadeLabel.trim()).length} de {datasets.length} arquivos prontos</Badge></div>
             <div className="dataset-tabs" role="tablist" aria-label="Arquivos do lote">{datasets.map((dataset, index) => { const ready = Boolean(dataset.mapping.eventType && dataset.fixationLabel.trim() && dataset.saccadeLabel.trim()); return <button role="tab" aria-selected={dataset.id === activeDataset?.id} className={dataset.id === activeDataset?.id ? "active" : ""} key={dataset.id} onClick={() => setActiveDatasetId(dataset.id)}><span>{index + 1}</span><div><strong>{dataset.fileName}</strong><small>{ready ? "pronto" : "revisar eventos"}</small></div>{ready && <CircleCheck />}</button>; })}</div>
             {activeDataset && activeDataset.sheets.length > 1 && <div className="sheet-picker"><div><strong>Planilha do arquivo</strong><span>Escolha a aba que contém os dados brutos.</span></div><Select value={activeDataset.sheetName} onValueChange={(value) => { const selected = activeDataset.sheets.find((sheet) => sheet.name === value); if (selected) { const suggested = suggestMapping(selected.headers); const detected = detectDurationUnit(selected.rows, suggested); const labels = detectEventLabels(selected.rows, suggested); patchDataset(activeDataset.id, { rows: selected.rows, headers: selected.headers, sheetName: selected.name, mapping: suggested, fixationLabel: labels.fixation, saccadeLabel: labels.saccade, customMappings: {}, durationDetection: detected, durationUnit: detected ?? activeDataset.durationUnit, participantOverride: deriveSingleValue(selected.rows, suggested, "participant"), groupOverride: deriveSingleValue(selected.rows, suggested, "group") }); } }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{activeDataset.sheets.map((sheet) => <SelectItem key={sheet.name} value={sheet.name}>{sheet.name} · {sheet.rows.length} linhas</SelectItem>)}</SelectContent></Select></div>}
-            <div className="mapping-progress"><div><strong>{activeDataset?.fileName}</strong><span>{mappedCount} de {mappingFields.length} campos reconhecidos</span></div><Badge variant={requiredReady ? "outline" : "secondary"}>{requiredReady ? "tipo de evento mapeado" : "falta campo obrigatório"}</Badge></div>
+            <div className="mapping-progress"><div><strong>{activeDataset?.fileName}</strong><span>{mappedCount} de {mappingFields.length} campos relacionados às colunas do arquivo</span></div><Badge variant={requiredReady ? "outline" : "secondary"}>{requiredReady ? "eventos identificados" : "selecione o tipo de evento"}</Badge></div>
             <div className="mapping-grid">
               {mappingFields.map((field) => (
                 <div className={field.required && !mapping[field.key] ? "mapping-card required" : "mapping-card"} key={field.key}>
@@ -649,7 +649,7 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
               ))}
             </div>
             {activeDataset?.mapping.eventType && <div className="event-values-panel">
-              <div className="section-intro"><div><strong>Como os eventos aparecem neste arquivo?</strong><span>Informe os textos gravados dentro da coluna “{activeDataset.mapping.eventType}”. Isso é diferente do nome da coluna.</span></div><Badge variant="outline">por arquivo</Badge></div>
+              <div className="section-intro"><div><strong>Quais textos identificam fixações e sacadas?</strong><span>Use exatamente os valores encontrados nas células da coluna “{activeDataset.mapping.eventType}”. Exemplo: “Fixation” e “Saccade”.</span></div><Badge variant="outline">confirmar em cada arquivo</Badge></div>
               <div className="event-value-grid">
                 <div><Label htmlFor={`fixation-label-${activeDataset.id}`}>Valor que identifica uma fixação</Label><Input id={`fixation-label-${activeDataset.id}`} list={`event-values-${activeDataset.id}`} value={activeDataset.fixationLabel} onChange={(event) => patchDataset(activeDataset.id, { fixationLabel: event.target.value })} placeholder="Digite exatamente como aparece nas células" /></div>
                 <div><Label htmlFor={`saccade-label-${activeDataset.id}`}>Valor que identifica uma sacada</Label><Input id={`saccade-label-${activeDataset.id}`} list={`event-values-${activeDataset.id}`} value={activeDataset.saccadeLabel} onChange={(event) => patchDataset(activeDataset.id, { saccadeLabel: event.target.value })} placeholder="Digite exatamente como aparece nas células" /></div>
@@ -657,7 +657,7 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
               <datalist id={`event-values-${activeDataset.id}`}>{eventTypeValues.map((value) => <option value={value} key={value} />)}</datalist>
             </div>}
             <div className="custom-mapping-panel">
-              <div className="section-intro"><div><strong>Outras variáveis numéricas</strong><span>Adicione medidas que não aparecem na lista padrão. Dê um nome para a saída e escolha a coluna correspondente em cada arquivo.</span></div><Button type="button" variant="outline" size="sm" onClick={addCustomVariable}><Plus /> Adicionar variável</Button></div>
+              <div className="section-intro"><div><strong>Outras variáveis numéricas</strong><span>Use esta área quando quiser tabular uma medida que não aparece na lista padrão. O nome escolhido será usado como título no Excel final.</span></div><Button type="button" variant="outline" size="sm" onClick={addCustomVariable}><Plus /> Adicionar variável</Button></div>
               {customVariables.length === 0 ? <div className="custom-empty">Nenhuma variável adicional. Use esta opção somente quando precisar tabular outra medida numérica do arquivo.</div> : <div className="custom-variable-list">
                 {customVariables.map((variable) => <div className="custom-variable-row" key={variable.id}>
                   <div><Label htmlFor={`custom-name-${variable.id}`}>Nome na planilha final</Label><Input id={`custom-name-${variable.id}`} value={variable.label} onChange={(event) => updateCustomVariable(variable.id, { label: event.target.value })} placeholder="Ex.: Velocidade do evento" /></div>
@@ -667,7 +667,7 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
                   <Button type="button" variant="ghost" size="icon" className="remove-custom" onClick={() => removeCustomVariable(variable.id)} aria-label={`Remover ${variable.label}`}><Trash2 /></Button>
                 </div>)}
               </div>}
-              {customVariables.length > 0 && <p className="custom-note">Ao trocar de arquivo acima, escolha a coluna equivalente. Se usar fixações e sacadas, o Excel criará resultados separados para não misturar os dois tipos de evento.</p>}
+              {customVariables.length > 0 && <p className="custom-note"><strong>Para cada arquivo:</strong> selecione a coluna que contém essa medida. Em “Fixações e sacadas”, o Oculab criará colunas separadas para cada tipo de evento.</p>}
             </div>
             <div className="raw-preview"><div className="preview-title"><div><strong>Prévia do arquivo</strong><span>Planilha: {activeDataset?.sheetName}</span></div><span>5 primeiras linhas</span></div><DataTable rows={rows.slice(0, 5)} limit={5} /></div>
             <div className="actions"><Button variant="outline" onClick={() => setStep(1)}>Voltar ao lote</Button><Button disabled={!allMappingsReady} onClick={() => setStep(3)}>Continuar para regras <ChevronRight /></Button></div>
@@ -676,35 +676,35 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
 
         {step === 3 && (
           <section className="stage">
-            <div className="stage-toolbar"><div><h2>Regras da análise</h2><p>Escolha como os dados serão calculados e organizados no Excel.</p></div><div className="preset-actions"><Button variant="outline" size="sm" onClick={() => presetInput.current?.click()}>Carregar preset</Button><Button variant="outline" size="sm" onClick={downloadPreset}>Salvar preset</Button><input ref={presetInput} type="file" accept=".json,application/json" hidden onChange={(event) => void loadPreset(event.target.files?.[0])} /><Badge variant="outline"><ShieldCheck size={14} /> auditoria ativa</Badge></div></div>
+            <div className="stage-toolbar"><div><h2>Configure o arquivo final</h2><p>Defina como os valores serão calculados e quais guias aparecerão no Excel.</p></div><div className="preset-actions"><Button variant="outline" size="sm" onClick={() => presetInput.current?.click()}>Carregar configuração</Button><Button variant="outline" size="sm" onClick={downloadPreset}>Salvar configuração</Button><input ref={presetInput} type="file" accept=".json,application/json" hidden onChange={(event) => void loadPreset(event.target.files?.[0])} /><Badge variant="outline"><ShieldCheck size={14} /> verificações automáticas ativas</Badge></div></div>
             <div className="config-layout">
               <Card className="config-card">
-                <CardHeader><CardTitle>Cálculo dos eventos</CardTitle><CardDescription>Defina a unidade de saída e como a amplitude será lida.</CardDescription></CardHeader>
+                <CardHeader><CardTitle>Cálculo dos eventos</CardTitle><CardDescription>Escolha como as durações e amplitudes aparecerão no resultado.</CardDescription></CardHeader>
                 <CardContent className="form-grid">
-                  <div className="form-span"><Label>Unidade das durações no Excel final</Label><Select value={outputDurationUnit} onValueChange={(value) => setOutputDurationUnit(value as "ms" | "s")}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="ms">Milissegundos</SelectItem><SelectItem value="s">Segundos</SelectItem></SelectContent></Select><p className="field-help">Cada arquivo será convertido automaticamente para a unidade escolhida aqui. A unidade original já foi definida na etapa de importação.</p></div>
-                  <div className="form-span"><Label>Onde a amplitude está gravada</Label><Select value={amplitudeSource} onValueChange={(value) => setAmplitudeSource(value as "auto" | "fixation" | "saccade")}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="auto">Detectar automaticamente (recomendado)</SelectItem><SelectItem value="fixation">Nas linhas de fixação</SelectItem><SelectItem value="saccade">Nas linhas de sacada</SelectItem></SelectContent></Select><p className="field-help">Algumas exportações Tobii registram a amplitude junto à fixação; outras, junto à sacada.</p></div>
-                  <div className="form-span setting-row"><div><strong>Ignorar eventos sem estímulo</strong><span>Evita incluir calibração, intervalos e trechos fora dos slides.</span></div><Switch checked={excludeMissingStimulus} onCheckedChange={setExcludeMissingStimulus} /></div>
+                  <div className="form-span"><Label>Unidade das durações no Excel final</Label><Select value={outputDurationUnit} onValueChange={(value) => setOutputDurationUnit(value as "ms" | "s")}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="ms">Milissegundos</SelectItem><SelectItem value="s">Segundos</SelectItem></SelectContent></Select><p className="field-help"><strong>Resultado:</strong> todas as durações serão convertidas para esta unidade, mesmo quando os arquivos originais utilizarem unidades diferentes.</p></div>
+                  <div className="form-span"><Label>Em quais linhas está a amplitude sacádica?</Label><Select value={amplitudeSource} onValueChange={(value) => setAmplitudeSource(value as "auto" | "fixation" | "saccade")}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="auto">Deixar o Oculab identificar</SelectItem><SelectItem value="fixation">Nas linhas classificadas como fixação</SelectItem><SelectItem value="saccade">Nas linhas classificadas como sacada</SelectItem></SelectContent></Select><p className="field-help"><strong>Quando alterar:</strong> escolha manualmente apenas se você souber onde o eye tracker gravou a amplitude. Caso contrário, mantenha a identificação automática.</p></div>
+                  <div className="form-span setting-row"><div><strong>Excluir linhas sem estímulo identificado</strong><span>Ativado: linhas sem nome de estímulo não entram nos cálculos. Isso costuma remover calibração, intervalos e trechos fora da tarefa.</span></div><Switch checked={excludeMissingStimulus} onCheckedChange={setExcludeMissingStimulus} /></div>
                 </CardContent>
               </Card>
 
               <Card className="config-card">
-                <CardHeader><CardTitle>Estrutura do estudo</CardTitle><CardDescription>Defina os momentos esperados e como calcular o resumo por participante.</CardDescription></CardHeader>
+                <CardHeader><CardTitle>Estrutura do estudo</CardTitle><CardDescription>Informe se cada participante possui uma única coleta ou vários momentos.</CardDescription></CardHeader>
                 <CardContent className="form-stack">
                   <div><Label>Desenho do estudo</Label><Select value={studyDesign} onValueChange={(value) => setStudyDesign(value as "cross-sectional" | "longitudinal")}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="longitudinal">Longitudinal / medidas repetidas</SelectItem><SelectItem value="cross-sectional">Transversal / momento único</SelectItem></SelectContent></Select></div>
-                  {studyDesign === "longitudinal" && <div><Label htmlFor="moments">Momentos esperados, na ordem</Label><Textarea id="moments" value={momentsText} onChange={(event) => setMomentsText(event.target.value)} placeholder="Momento 1, Momento 2, Momento 3" rows={2} /><p className="field-help">Se um participante não tiver dados em algum momento, a linha será mantida vazia para preservar a estrutura longitudinal.</p></div>}
-                  <div><Label>Como calcular as médias finais?</Label><Select value={finalWeighting} onValueChange={(value) => setFinalWeighting(value as "stimulus" | "event")}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="stimulus">Dar o mesmo peso a cada estímulo</SelectItem><SelectItem value="event">Juntar todos os eventos válidos</SelectItem></SelectContent></Select><p className="field-help">{finalWeighting === "stimulus" ? "Primeiro calcula cada estímulo e depois a média deles. Um estímulo com poucos eventos pesa o mesmo que outro com muitos." : "Calcula a média usando todos os eventos juntos. Estímulos com mais eventos têm maior influência no resultado."}</p></div>
-                  {finalWeighting === "stimulus" && <div><Label>Como reunir as contagens dos estímulos?</Label><Select value={countAggregation} onValueChange={(value) => setCountAggregation(value as "mean" | "sum")}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="mean">Média de eventos por estímulo</SelectItem><SelectItem value="sum">Total de eventos do participante</SelectItem></SelectContent></Select><p className="field-help">Isso afeta somente as contagens finais. O resumo por estímulo continua mostrando o total de cada estímulo.</p></div>}
-                  <div className="setting-row"><div><strong>Ordem dos participantes e grupos</strong><span>A fase 3 seguirá a ordem dos arquivos definida na importação e usará os grupos informados lá.</span></div></div>
+                  {studyDesign === "longitudinal" && <div><Label htmlFor="moments">Momentos esperados, na ordem</Label><Textarea id="moments" value={momentsText} onChange={(event) => setMomentsText(event.target.value)} placeholder="Momento 1, Momento 2, Momento 3" rows={2} /><p className="field-help"><strong>Resultado:</strong> o Oculab criará uma linha para cada momento informado. Quando não houver dados, a linha ficará vazia em vez de desaparecer.</p></div>}
+                  <div><Label>Como formar a média final de cada participante?</Label><Select value={finalWeighting} onValueChange={(value) => setFinalWeighting(value as "stimulus" | "event")}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="stimulus">Calcular cada estímulo antes da média final</SelectItem><SelectItem value="event">Calcular todos os eventos juntos</SelectItem></SelectContent></Select><p className="field-help"><strong>Diferença:</strong> {finalWeighting === "stimulus" ? "cada estímulo terá a mesma influência na média final, mesmo que possua quantidades diferentes de eventos." : "cada evento terá o mesmo peso; portanto, estímulos com mais eventos terão maior influência na média final."}</p></div>
+                  {finalWeighting === "stimulus" && <div><Label>O que mostrar nas contagens finais?</Label><Select value={countAggregation} onValueChange={(value) => setCountAggregation(value as "mean" | "sum")}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="mean">Média da contagem entre estímulos</SelectItem><SelectItem value="sum">Soma das contagens de todos os estímulos</SelectItem></SelectContent></Select><p className="field-help"><strong>Afeta apenas a fase 3:</strong> a fase 2 continuará mostrando a contagem própria de cada estímulo.</p></div>}
+                  <div className="setting-row"><div><strong>Ordem e grupos na fase 3</strong><span>Os participantes seguirão a ordem definida na importação. O grupo informado em cada arquivo será mantido em uma coluna própria.</span></div></div>
                 </CardContent>
               </Card>
             </div>
 
             <Card className="formats-card">
-              <CardHeader><CardTitle>As três fases do Excel</CardTitle><CardDescription>Escolha quais entregas serão incluídas. Cada uma terá uma guia própria e um layout adequado ao seu uso.</CardDescription></CardHeader>
+              <CardHeader><CardTitle>Quais fases incluir no Excel?</CardTitle><CardDescription>Ative somente as guias que deseja receber. A seleção não altera os cálculos das demais fases.</CardDescription></CardHeader>
               <CardContent className="format-grid">
                 {([
-                  { key: "eventTrace", title: "Fase 1 · Rastreio", detail: "Fixações e sacadas válidas em ordem; pares compartilham a mesma linha.", headers: ["Estímulo", "N fix.", "Dur. fix.", "Dur. sac."], cells: ["Slide 01", "7", "300", "20"] },
-                  { key: "stimulusSummary", title: "Fase 2 · Resumo", detail: "Uma linha por estímulo, seguida de MÉDIA/TOTAL e DP.", headers: ["Estímulo", "N fix.", "Média fix.", "Ampl."], cells: ["MÉDIA", "30,5", "361,03", "2,99"] },
+                  { key: "eventTrace", title: "Fase 1 · Eventos", detail: "Mostra as durações evento a evento, organizadas por estímulo e na ordem em que ocorreram.", headers: ["Estímulo", "N fix.", "Dur. fix.", "Dur. sac."], cells: ["Slide 01", "7", "300", "20"] },
+                  { key: "stimulusSummary", title: "Fase 2 · Resumo por estímulo", detail: "Reúne contagens, médias e desvios-padrão em uma linha para cada estímulo.", headers: ["Estímulo", "N fix.", "Média fix.", "Ampl."], cells: ["MÉDIA", "30,5", "361,03", "2,99"] },
                 ] as const).map((format) => (
                   <div role="checkbox" aria-checked={outputSheets[format.key]} tabIndex={0} key={format.key} className={outputSheets[format.key] ? "format-card selected" : "format-card"} onClick={() => setOutputSheets((current) => ({ ...current, [format.key]: !current[format.key] }))} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setOutputSheets((current) => ({ ...current, [format.key]: !current[format.key] })); } }}>
                     <span className="format-top"><span><strong>{format.title}</strong><small>{format.detail}</small></span><Switch checked={outputSheets[format.key]} onClick={(event) => event.stopPropagation()} onCheckedChange={(checked) => setOutputSheets((current) => ({ ...current, [format.key]: checked }))} aria-label={`Incluir ${format.title}`} /></span>
@@ -712,15 +712,15 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
                   </div>
                 ))}
                 <div role="checkbox" aria-checked={phase3Selected} tabIndex={0} className={phase3Selected ? "format-card selected phase3-card" : "format-card phase3-card"} onClick={() => togglePhase3(!phase3Selected)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); togglePhase3(!phase3Selected); } }}>
-                  <span className="format-top"><span><strong>Fase 3 · SPSS/JASP</strong><small>Base retangular com uma linha por caso e nomes de variáveis compatíveis.</small></span><Switch checked={phase3Selected} onClick={(event) => event.stopPropagation()} onCheckedChange={togglePhase3} aria-label="Incluir fase 3 para SPSS e JASP" /></span>
+                  <span className="format-top"><span><strong>Fase 3 · Base para SPSS/JASP</strong><small>Organiza os resultados por participante e momento, com nomes de colunas adequados para análise estatística.</small></span><Switch checked={phase3Selected} onClick={(event) => event.stopPropagation()} onCheckedChange={togglePhase3} aria-label="Incluir fase 3 para SPSS e JASP" /></span>
                   <span className="mini-table"><span>{["participante", "momento", "medida_1", "medida_2"].map((header) => <b key={header}>{header}</b>)}</span><span>{["P01", "Momento 1", "24,5", "3,2"].map((cell, index) => <i key={`${cell}-${index}`}>{cell}</i>)}</span></span>
                 </div>
               </CardContent>
-              {phase3Selected && <div className="phase3-options"><div><strong>Organização para análise estatística</strong><span>A guia ampla é útil para medidas repetidas; a longa funciona melhor em modelos por caso e momento.</span></div><Select value={outputLayout} onValueChange={(value) => changeOutputLayout(value as "long" | "wide" | "both")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="both">Incluir longa e ampla</SelectItem><SelectItem value="long">Somente formato longo</SelectItem><SelectItem value="wide">Somente formato amplo</SelectItem></SelectContent></Select></div>}
+              {phase3Selected && <div className="phase3-options"><div><strong>Formato da base estatística</strong><span><b>Longo:</b> uma linha por participante e momento. <b>Amplo:</b> uma linha por participante, com cada momento em colunas diferentes.</span></div><Select value={outputLayout} onValueChange={(value) => changeOutputLayout(value as "long" | "wide" | "both")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="both">Incluir os dois formatos</SelectItem><SelectItem value="long">Incluir somente o formato longo</SelectItem><SelectItem value="wide">Incluir somente o formato amplo</SelectItem></SelectContent></Select></div>}
             </Card>
 
             <Card className="metrics-card">
-              <CardHeader className="metrics-head"><div><CardTitle>O que deve entrar na tabulação?</CardTitle><CardDescription>Somente as variáveis ativadas aparecerão nas planilhas e na base estatística.</CardDescription></div><div><Button type="button" variant="outline" size="sm" onClick={() => setMetrics(defaultMetrics)}>Básicas</Button><Button type="button" variant="outline" size="sm" onClick={() => setMetrics(Object.fromEntries(metricFields.map(({ key }) => [key, true])) as Record<MetricKey, boolean>)}>Todas</Button><Button type="button" variant="ghost" size="sm" onClick={() => setMetrics(Object.fromEntries(metricFields.map(({ key }) => [key, false])) as Record<MetricKey, boolean>)}>Limpar</Button></div></CardHeader>
+              <CardHeader className="metrics-head"><div><CardTitle>Variáveis que serão tabuladas</CardTitle><CardDescription>Somente as variáveis ativadas abaixo serão calculadas e incluídas nas planilhas finais.</CardDescription></div><div><Button type="button" variant="outline" size="sm" onClick={() => setMetrics(defaultMetrics)}>Selecionar básicas</Button><Button type="button" variant="outline" size="sm" onClick={() => setMetrics(Object.fromEntries(metricFields.map(({ key }) => [key, true])) as Record<MetricKey, boolean>)}>Selecionar todas</Button><Button type="button" variant="ghost" size="sm" onClick={() => setMetrics(Object.fromEntries(metricFields.map(({ key }) => [key, false])) as Record<MetricKey, boolean>)}>Desmarcar</Button></div></CardHeader>
               <CardContent className="metrics-grid">
                 {metricFields.map((metric) => <div className="metric-row" key={metric.key}><div><strong>{metric.label}</strong><span>{metric.detail}</span></div><Switch checked={metrics[metric.key]} onCheckedChange={(checked) => setMetrics((current) => ({ ...current, [metric.key]: checked }))} aria-label={`Ativar ${metric.label}`} /></div>)}
               </CardContent>
@@ -734,19 +734,19 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
           <section className="stage results-stage">
             <div className="stage-toolbar"><div><h2>Sua tabulação está pronta</h2><p>Confira cada fase e baixe um único Excel organizado para revisão e análise.</p></div><Button onClick={() => exportWorkbook(result, config, fileName)}><Download /> Baixar Excel organizado</Button></div>
             <div className="summary-grid">
-              <div><span>Arquivos</span><strong>{result.summary.sourceFiles.toLocaleString("pt-BR")}</strong><small>lote consolidado</small></div>
-              <div><span>Linhas brutas</span><strong>{result.summary.rawRows.toLocaleString("pt-BR")}</strong><small>somadas no lote</small></div>
-              <div><span>Fixações únicas</span><strong>{result.summary.fixationEvents.toLocaleString("pt-BR")}</strong><small>após consolidação</small></div>
-              <div><span>Pares válidos</span><strong>{result.summary.pairedEvents.toLocaleString("pt-BR")}</strong><small>fixação → sacada</small></div>
-              <div><span>{studyDesign === "longitudinal" ? "Matriz longitudinal" : "Casos agregados"}</span><strong>{result.level2.length.toLocaleString("pt-BR")}</strong><small>{studyDesign === "longitudinal" ? "linhas preservadas" : "combinações observadas"}</small></div>
+              <div><span>Arquivos processados</span><strong>{result.summary.sourceFiles.toLocaleString("pt-BR")}</strong><small>reunidos neste resultado</small></div>
+              <div><span>Linhas lidas</span><strong>{result.summary.rawRows.toLocaleString("pt-BR")}</strong><small>total dos arquivos brutos</small></div>
+              <div><span>Fixações identificadas</span><strong>{result.summary.fixationEvents.toLocaleString("pt-BR")}</strong><small>IDs únicos de fixação</small></div>
+              <div><span>Fixações com sacada seguinte</span><strong>{result.summary.pairedEvents.toLocaleString("pt-BR")}</strong><small>pares cronológicos encontrados</small></div>
+              <div><span>{studyDesign === "longitudinal" ? "Linhas na base longitudinal" : "Linhas na base final"}</span><strong>{result.level2.length.toLocaleString("pt-BR")}</strong><small>{studyDesign === "longitudinal" ? "inclui momentos sem dados" : "casos resumidos"}</small></div>
             </div>
 
             <Tabs defaultValue={outputSheets.eventTrace ? "level1" : outputSheets.stimulusSummary ? "stimulus" : "level2"} className="result-tabs">
               <TabsList variant="line" className="tabs-list"><TabsTrigger value="level1">Fase 1 · rastreio</TabsTrigger><TabsTrigger value="stimulus">Fase 2 · resumo</TabsTrigger><TabsTrigger value="level2">Fase 3 · dados longos</TabsTrigger><TabsTrigger value="wide">Fase 3 · dados amplos</TabsTrigger><TabsTrigger value="chart">Visão geral</TabsTrigger><TabsTrigger value="audit">Auditoria</TabsTrigger></TabsList>
-              <TabsContent value="level1"><div className="tab-heading"><div><strong>Rastreio organizado por estímulo</strong><span>Fixações e sacadas válidas seguem a ordem original. Pares compartilham uma linha.</span></div><Badge variant="outline">{result.summary.fixationEvents} fixações · {result.summary.saccadeEvents} sacadas</Badge></div><DataTable rows={level1Preview} headerLabel={friendlyHeader} /></TabsContent>
-              <TabsContent value="stimulus"><div className="tab-heading"><div><strong>Resumo por estímulo ou slide</strong><span>Cada linha resume um estímulo. As linhas amarelas mostram a média ou total e o desvio-padrão.</span></div><Badge variant="outline">{result.byStimulus.length} linhas</Badge></div><DataTable rows={result.byStimulus} headerLabel={friendlyHeader} /></TabsContent>
-              <TabsContent value="level2"><div className="tab-heading"><div><strong>Formato longo para SPSS/JASP</strong><span>Cada linha representa um participante em um momento.</span></div><Badge variant="outline">{result.level2.length} linhas</Badge></div><DataTable rows={result.level2} headerLabel={friendlyHeader} /></TabsContent>
-              <TabsContent value="wide"><div className="tab-heading"><div><strong>Formato amplo para medidas repetidas</strong><span>Cada participante ocupa uma linha; os momentos ficam nas colunas.</span></div><Badge variant="outline">{result.level2Wide.length} linhas</Badge></div><DataTable rows={result.level2Wide} headerLabel={friendlyHeader} /></TabsContent>
+              <TabsContent value="level1"><div className="tab-heading"><div><strong>Eventos organizados por estímulo</strong><span>A tabela preserva a ordem dos eventos. Quando houver uma sacada imediatamente após uma fixação, ambas aparecem na mesma linha; as demais sacadas continuam na coluna de duração de sacadas.</span></div><Badge variant="outline">{result.summary.fixationEvents} fixações · {result.summary.saccadeEvents} sacadas</Badge></div><DataTable rows={level1Preview} headerLabel={friendlyHeader} /></TabsContent>
+              <TabsContent value="stimulus"><div className="tab-heading"><div><strong>Resumo por estímulo ou slide</strong><span>Cada linha reúne as medidas de um estímulo. No Excel, as linhas destacadas ao final de cada participante mostram média ou total e desvio-padrão.</span></div><Badge variant="outline">{result.byStimulus.length} linhas</Badge></div><DataTable rows={result.byStimulus} headerLabel={friendlyHeader} /></TabsContent>
+              <TabsContent value="level2"><div className="tab-heading"><div><strong>Formato longo para SPSS/JASP</strong><span>Cada linha representa a combinação entre um participante e um momento. Este formato é indicado para modelos que analisam observações repetidas em linhas.</span></div><Badge variant="outline">{result.level2.length} linhas</Badge></div><DataTable rows={result.level2} headerLabel={friendlyHeader} /></TabsContent>
+              <TabsContent value="wide"><div className="tab-heading"><div><strong>Formato amplo para medidas repetidas</strong><span>Cada participante ocupa uma única linha. As medidas de cada momento aparecem em colunas separadas.</span></div><Badge variant="outline">{result.level2Wide.length} linhas</Badge></div><DataTable rows={result.level2Wide} headerLabel={friendlyHeader} /></TabsContent>
               <TabsContent value="chart">
                 <div className="chart-panel">
                   <div className="tab-heading"><div><strong>{activeChartMetric?.label ?? "Visão geral"} por grupo</strong><span>Média dos participantes em cada grupo. Escolha abaixo o que deseja comparar.</span></div><Badge variant="outline">{activeChartMetric?.unit(outputDurationUnit) ?? ""}</Badge></div>
@@ -761,7 +761,7 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
               </TabsContent>
               <TabsContent value="audit"><div className="audit-list">{result.audit.map((item) => <div className={`audit-item ${item.status}`} key={item.test}>{item.status === "ok" ? <CircleCheck /> : <CircleAlert />}<div><strong>{item.test}</strong><p>{item.detail}</p></div><Badge variant="outline">{item.status === "ok" ? "Aprovado" : item.status === "warning" ? "Atenção" : "Falhou"}</Badge></div>)}</div></TabsContent>
             </Tabs>
-            <div className="post-export-note"><FileCheck2 /><div><strong>O Excel também inclui guias de conferência e ajuda.</strong><span>Auditoria mostra as verificações; Leia-me explica cada fase; Dicionário define as variáveis da fase 3.</span></div></div>
+            <div className="post-export-note"><FileCheck2 /><div><strong>O Excel inclui informações para conferir e reutilizar a tabulação.</strong><span>A guia “Auditoria” registra as verificações realizadas; “Leia-me” explica a estrutura do arquivo; e “Dicionário” descreve as variáveis da fase 3.</span></div></div>
             <div className="actions"><Button variant="outline" onClick={() => setStep(3)}><RefreshCcw /> Ajustar escolhas</Button><Button onClick={() => exportWorkbook(result, config, fileName)}><Download /> Baixar Excel organizado</Button></div>
           </section>
         )}

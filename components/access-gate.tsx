@@ -181,11 +181,11 @@ export default function AccessGate({ email = "", status = "none", adminHref }: P
           <div className="access-team-copy"><span>Concepção e desenvolvimento</span><h3>Vinícius Freitas Barbosa da Silva</h3><p>Graduando em Psicologia na UFPB e pesquisador do LPNeC. Concebe e desenvolve o Oculab, aproximando pesquisa em eye tracking, organização de dados e tecnologia aplicada à ciência.</p></div>
         </article>
         <article className="access-team-profile">
-          <div className="access-team-photo access-team-photo-gessica"><Image src="/team-gessica.jpg" alt="Géssica Almeida de Freitas" fill sizes="(max-width: 760px) 88vw, 31vw" unoptimized /></div>
+          <div className="access-team-photo access-team-photo-gessica"><Image src="/team-gessica.jpg?v=2" alt="Géssica Almeida de Freitas" fill sizes="(max-width: 760px) 88vw, 31vw" unoptimized /></div>
           <div className="access-team-copy"><span>Pesquisa e colaboração científica</span><h3>Géssica Almeida de Freitas</h3><p>Psicóloga, mestra em Neurociência Cognitiva e Comportamento e doutoranda em Psicologia Social pela UFPB. Integra o LPNeC e pesquisa neurociências, neuropsicologia, saúde mental, gênero e violência por parceiro íntimo.</p></div>
         </article>
         <article className="access-team-profile">
-          <div className="access-team-photo access-team-photo-gabriella"><Image src="/team-gabriella.jpg" alt="Gabriella Medeiros Silva" fill sizes="(max-width: 760px) 88vw, 31vw" unoptimized /></div>
+          <div className="access-team-photo access-team-photo-gabriella"><Image src="/team-gabriella.jpg?v=2" alt="Gabriella Medeiros Silva" fill sizes="(max-width: 760px) 88vw, 31vw" unoptimized /></div>
           <div className="access-team-copy"><span>Pesquisa e colaboração científica</span><h3>Gabriella Medeiros Silva</h3><p>Psicóloga, mestra e doutora em Psicologia Social pela UFPB, especialista em Neurociência do Desenvolvimento Humano e integrante do LPNeC. Pesquisa funções perceptuais e cognitivas com medidas psicofísicas, psicofisiológicas e eletrofisiológicas.</p></div>
         </article>
       </div>

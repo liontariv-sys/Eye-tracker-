@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { ArrowRight, BarChart3, CheckCircle2, ChevronDown, Clock3, Cookie, Download, FileSpreadsheet, KeyRound, Laptop, LockKeyhole, Mail, RefreshCw, ShieldCheck, SlidersHorizontal, UserRound, XCircle } from "lucide-react";
+import { ArrowRight, BarChart3, CheckCircle2, ChevronDown, Clock3, Cookie, Download, FileSpreadsheet, KeyRound, Laptop, LockKeyhole, Mail, RefreshCw, ShieldCheck, SlidersHorizontal, XCircle } from "lucide-react";
 import Image from "next/image";
 
 type Props = { email?: string; status?: "none" | "pending" | "denied"; adminHref: string };
@@ -158,7 +158,7 @@ export default function AccessGate({ email = "", status = "none", adminHref }: P
         <div className="process-stream process-stream-in" aria-hidden="true"><i /><i /><i /></div>
         <div className="process-engine">
           <span className="process-orbit" />
-          <div><Image src="/brand/lpnec-logo-transparent.png" alt="" width={88} height={52} unoptimized /><strong>Oculab</strong><small>mapear · calcular · auditar</small></div>
+          <div className="process-engine-core"><Image src="/brand/lpnec-logo-transparent.png" alt="LPNeC" width={88} height={52} unoptimized /><strong>Oculab</strong><small>mapear · calcular · auditar</small></div>
         </div>
         <div className="process-stream process-stream-out" aria-hidden="true"><i /><i /><i /></div>
         <div className="process-sheet process-sheet-ready">
@@ -175,13 +175,19 @@ export default function AccessGate({ email = "", status = "none", adminHref }: P
         <h2>Pessoas, pesquisa e desenvolvimento no mesmo projeto.</h2>
         <p>O Oculab é desenvolvido no contexto do LPNeC, na UFPB. A equipe reúne experiência em pesquisa com comportamento visual e o compromisso de transformar uma rotina técnica em uma experiência mais clara para outros pesquisadores.</p>
       </div>
-      <article className="access-founder">
-        <div className="access-founder-photo"><Image src="/team-vinicius.jpg" alt="Vinícius Freitas Barbosa da Silva" fill sizes="(max-width: 760px) 100vw, 44vw" unoptimized /></div>
-        <div className="access-founder-copy"><span>Concepção e desenvolvimento</span><h3>Vinícius Freitas Barbosa da Silva</h3><p>Graduando em Psicologia na UFPB e pesquisador do LPNeC. É responsável pela concepção e pelo desenvolvimento do Oculab, projeto que aproxima pesquisa em eye tracking, organização de dados e tecnologia aplicada à ciência.</p></div>
-      </article>
-      <div className="access-team-next" aria-label="Perfis que serão adicionados à equipe">
-        <article><span><UserRound /></span><div><h3>Géssica Almeida de Freitas</h3><p>Perfil de autoria e colaboração em atualização.</p></div></article>
-        <article><span><UserRound /></span><div><h3>Gabriella Medeiros Silva</h3><p>Perfil de autoria e colaboração em atualização.</p></div></article>
+      <div className="access-team-grid">
+        <article className="access-team-profile">
+          <div className="access-team-photo access-team-photo-vinicius"><Image src="/team-vinicius.jpg" alt="Vinícius Freitas Barbosa da Silva" fill sizes="(max-width: 760px) 88vw, 31vw" unoptimized /></div>
+          <div className="access-team-copy"><span>Concepção e desenvolvimento</span><h3>Vinícius Freitas Barbosa da Silva</h3><p>Graduando em Psicologia na UFPB e pesquisador do LPNeC. Concebe e desenvolve o Oculab, aproximando pesquisa em eye tracking, organização de dados e tecnologia aplicada à ciência.</p></div>
+        </article>
+        <article className="access-team-profile">
+          <div className="access-team-photo access-team-photo-gessica"><Image src="/team-gessica.jpg" alt="Géssica Almeida de Freitas" fill sizes="(max-width: 760px) 88vw, 31vw" unoptimized /></div>
+          <div className="access-team-copy"><span>Pesquisa e colaboração científica</span><h3>Géssica Almeida de Freitas</h3><p>Psicóloga, mestra em Neurociência Cognitiva e Comportamento e doutoranda em Psicologia Social pela UFPB. Integra o LPNeC e pesquisa neurociências, neuropsicologia, saúde mental, gênero e violência por parceiro íntimo.</p></div>
+        </article>
+        <article className="access-team-profile">
+          <div className="access-team-photo access-team-photo-gabriella"><Image src="/team-gabriella.jpg" alt="Gabriella Medeiros Silva" fill sizes="(max-width: 760px) 88vw, 31vw" unoptimized /></div>
+          <div className="access-team-copy"><span>Pesquisa e colaboração científica</span><h3>Gabriella Medeiros Silva</h3><p>Psicóloga, mestra e doutora em Psicologia Social pela UFPB, especialista em Neurociência do Desenvolvimento Humano e integrante do LPNeC. Pesquisa funções perceptuais e cognitivas com medidas psicofísicas, psicofisiológicas e eletrofisiológicas.</p></div>
+        </article>
       </div>
     </section>
 

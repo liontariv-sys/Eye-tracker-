@@ -795,10 +795,10 @@ html { scroll-behavior: smooth; }
 /* Apresentação pública editorial — conteúdo institucional sem repetir a área de trabalho. */
 .access-section-label { color: #0b8179; font-size: .69rem; font-weight: 850; text-transform: uppercase; letter-spacing: .16em; }
 
-.access-about { display: grid; grid-template-columns: minmax(280px, .72fr) minmax(0, 1.28fr); gap: clamp(48px, 8vw, 112px); align-items: start; }
-.access-about-heading { position: sticky; top: 116px; }
+.access-about { display: grid; grid-template-columns: minmax(280px, .72fr) minmax(0, 1.28fr); gap: clamp(48px, 8vw, 112px); align-items: center; }
+.access-about-heading { position: relative; }
 .access-about-heading h2 { max-width: 500px; margin: 14px 0 0; color: #11343f; font-size: clamp(2.15rem, 3.85vw, 3.7rem); font-weight: 790; line-height: 1; letter-spacing: -.052em; }
-.access-about-copy { padding-top: 4px; }
+.access-about-copy { padding-top: 38px; }
 .access-about-copy > p { margin: 0; color: #506a70; font-size: clamp(.92rem, 1.05vw, 1rem); line-height: 1.72; }
 .access-about-copy > p + p { margin-top: 20px; }
 .access-principles { margin-top: 42px; border-top: 1px solid #cddfda; }
@@ -851,7 +851,7 @@ html { scroll-behavior: smooth; }
 .access-team-photo { position: relative; width: clamp(156px, 15vw, 190px); height: auto; aspect-ratio: 1; margin: 26px auto 0; overflow: hidden; border: 6px solid #e8f3f0; border-radius: 50%; background: #dcece8; box-shadow: 0 12px 28px #143b4520; }
 .access-team-photo::after { display: none; }
 .access-team-photo img { object-fit: cover; transform: none; }
-.access-team-photo-vinicius img { object-position: center 44%; }
+.access-team-photo-vinicius img { object-position: center 59%; transform: scale(1.08); }
 .access-team-photo-gessica img { object-position: center; }
 .access-team-photo-gabriella img { object-position: center; }
 .access-team-copy { padding: 22px 24px 28px; }
@@ -917,6 +917,7 @@ html { scroll-behavior: smooth; }
   .access-about { grid-template-columns: 1fr; gap: 34px; }
   .access-about-heading, .access-privacy-intro { position: static; }
   .access-about-heading h2 { max-width: 760px; }
+  .access-about-copy { padding-top: 0; }
   .access-privacy-section { grid-template-columns: 1fr; }
   .access-privacy-intro h2 { max-width: 720px; }
   .access-privacy-details { grid-column: 1; }

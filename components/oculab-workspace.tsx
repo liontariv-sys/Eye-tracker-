@@ -16,14 +16,11 @@ import {
   Gauge,
   GripVertical,
   Home,
-  Eye,
-  Cpu,
   Layers3,
   LogOut,
   Plus,
   RefreshCcw,
   ShieldCheck,
-  Sigma,
   Sparkles,
   Trash2,
   UploadCloud,
@@ -499,7 +496,7 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/brand/lpnec-logo-transparent.png" alt="LPNeC" />
           </div>
-          <div className="brand-copy"><strong>LPNeC <span>Oculab</span></strong><small>Percepção · Neurociências · UFPB</small></div>
+          <div className="brand-copy"><strong>LPNeC <span>Oculab</span></strong><small>Percepção · Neurociências</small></div>
         </div>
         <nav aria-label="Navegação do Oculab">
           {navigationItems.map(({ id, label, icon: Icon }) => (
@@ -517,7 +514,7 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
           <div className="topbar-heading">
             <span className="topbar-step" aria-hidden="true">{step === 0 ? <Home /> : String(step).padStart(2, "0")}</span>
             <div>
-              <p className="eyebrow">Laboratório de Percepção, Neurociências e Comportamento · UFPB</p>
+              <p className="eyebrow">Laboratório de Percepção, Neurociências e Comportamento</p>
               <h1>{currentNavigationItem.label}</h1>
             </div>
           </div>
@@ -531,69 +528,21 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
         {error && <div className="error-banner" role="alert"><CircleAlert size={19} /><span>{error}</span><button onClick={() => setError("")}>Fechar</button></div>}
 
         {step === 0 && (
-          <section className="stage home-stage">
-            <div className="home-hero">
-              <div className="home-hero-copy">
-                <span className="home-kicker">LPNeC · UFPB</span>
-                <h2>Dados de eye tracking organizados para pesquisa.</h2>
-                <p>O LPNeC Oculab apoia pesquisadores na preparação de dados oculomotores, desde a importação dos arquivos brutos até a exportação de planilhas prontas para revisão e análise estatística.</p>
-                <div className="home-actions">
-                  <Button size="lg" onClick={() => setStep(1)}>Começar tabulação <ChevronRight /></Button>
-                  <button type="button" className="home-text-link" onClick={() => document.getElementById("como-usar")?.scrollIntoView({ behavior: "smooth" })}>Ver como funciona</button>
-                </div>
-              </div>
-              <div className="home-hero-mark" aria-hidden="true">
-                <Eye />
-                <span>Dados brutos</span>
-                <ChevronRight />
-                <strong>Excel organizado</strong>
-              </div>
+          <section className="stage internal-start">
+            <div className="internal-start-main">
+              <span className="internal-start-label">Área de trabalho</span>
+              <h2>Inicie uma nova tabulação.</h2>
+              <p>Adicione as planilhas brutas, identifique os participantes e siga as etapas laterais até revisar e exportar o resultado.</p>
+              <Button size="lg" onClick={() => setStep(1)}>Importar dados <UploadCloud /></Button>
             </div>
-
-            <div className="home-purpose-grid" aria-label="Principais recursos">
-              <article><span><Layers3 /></span><div><strong>Estrutura flexível</strong><p>Mapeia diferentes nomes de colunas e formatos de planilha.</p></div></article>
-              <article><span><Sigma /></span><div><strong>Tabulação orientada</strong><p>Calcula somente as variáveis selecionadas pelo pesquisador.</p></div></article>
-              <article><span><BarChart3 /></span><div><strong>Saída para análise</strong><p>Gera tabelas para conferência, SPSS, JASP e Excel.</p></div></article>
-            </div>
-
-            <div className="home-information-grid">
-              <article className="home-info-card">
-                <span className="home-section-label">Sobre o projeto</span>
-                <h3>Uma ferramenta criada a partir das rotinas de pesquisa do LPNeC.</h3>
-                <p>O Oculab surgiu da necessidade de reduzir etapas manuais na organização de dados de rastreamento ocular e tornar o processo mais claro, reproduzível e adaptável a diferentes estudos.</p>
-                <p>Seu foco é apoiar a limpeza, a tabulação, a auditoria e a preparação de bases para análises posteriores.</p>
-              </article>
-              <article className="home-info-card privacy-card">
-                <span className="home-info-icon"><Cpu /></span>
-                <div><span className="home-section-label">Funcionamento dos dados</span><h3>Processamento realizado no navegador</h3><p>As planilhas brutas são processadas no dispositivo em uso e não são enviadas ao servidor do Oculab. Ao fechar ou atualizar a página, o lote precisa ser importado novamente.</p></div>
-              </article>
-            </div>
-
-            <section className="home-flow" id="como-usar">
-              <div className="home-section-heading"><span className="home-section-label">Como utilizar</span><h3>Da planilha bruta ao arquivo final em quatro etapas</h3><p>A navegação acompanha o fluxo real da ferramenta.</p></div>
-              <div className="home-flow-grid">
-                {steps.map(({ id, label, icon: Icon }, index) => (
-                  <button type="button" key={id} onClick={() => id <= (datasets.length ? 4 : 1) && setStep(id)} disabled={id > 1 && !datasets.length}>
-                    <span className="home-flow-number">{String(id).padStart(2, "0")}</span>
-                    <span className="home-flow-icon"><Icon /></span>
-                    <strong>{label}</strong>
-                    <p>{[
-                      "Selecione uma ou mais planilhas e identifique participantes e grupos.",
-                      "Relacione os campos do arquivo às informações usadas pelo Oculab.",
-                      "Escolha variáveis, unidades, desenho do estudo e formato de saída.",
-                      "Confira tabelas, gráficos e auditoria antes de baixar o Excel.",
-                    ][index]}</p>
-                    {index < steps.length - 1 && <ChevronRight className="home-flow-arrow" />}
-                  </button>
-                ))}
-              </div>
-              {!datasets.length && <p className="home-flow-note">As etapas seguintes serão liberadas depois que pelo menos um arquivo for importado.</p>}
-            </section>
-
-            <footer className="home-credits">
-              <div><span className="home-section-label">Desenvolvimento</span><strong>Vinícius Freitas Barbosa da Silva</strong><p>Projeto desenvolvido no contexto das atividades de pesquisa do Laboratório de Percepção, Neurociências e Comportamento — LPNeC/UFPB.</p></div>
-              <Button variant="outline" onClick={() => setStep(1)}>Importar dados <UploadCloud /></Button>
-            </footer>
+            <aside className="internal-start-checklist" aria-label="Antes de importar">
+              <span>Antes de importar</span>
+              <ul>
+                <li><CircleCheck /><span>Separe um identificador sem dados pessoais para cada participante.</span></li>
+                <li><CircleCheck /><span>Tenha em mãos o grupo e o momento de coleta de cada arquivo.</span></li>
+                <li><CircleCheck /><span>Confirme se as durações estão registradas em milissegundos ou segundos.</span></li>
+              </ul>
+            </aside>
           </section>
         )}
 

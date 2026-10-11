@@ -7,7 +7,7 @@ const siteUrl = "https://lpnec-oculab.oculablpnec.workers.dev";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "LPNeC Oculab — Tabulação de Eye Tracking",
-  description: "Plataforma do LPNeC/UFPB para limpeza, tabulação, auditoria e organização de dados de eye tracking para análise no JASP, SPSS e Excel.",
+  description: "Plataforma do LPNeC para limpeza, tabulação, auditoria e organização de dados de eye tracking para análise no JASP, SPSS e Excel.",
   applicationName: "LPNeC Oculab",
   manifest: "/manifest.webmanifest",
   alternates: { canonical: "/" },

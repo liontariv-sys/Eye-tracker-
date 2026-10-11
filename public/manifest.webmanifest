@@ -1,7 +1,7 @@
 {
   "name": "LPNeC Oculab",
   "short_name": "Oculab",
-  "description": "Tabulação, limpeza e organização de dados de eye tracking do LPNeC/UFPB.",
+  "description": "Tabulação, limpeza e organização de dados de eye tracking do LPNeC.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

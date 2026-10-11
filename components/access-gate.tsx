@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { ArrowRight, BarChart3, CheckCircle2, ChevronDown, Clock3, Eye, FileSpreadsheet, KeyRound, Layers3, LockKeyhole, Mail, RefreshCw, ShieldCheck, XCircle } from "lucide-react";
+import { ArrowRight, BarChart3, CheckCircle2, ChevronDown, Clock3, Cookie, Download, FileSpreadsheet, KeyRound, Laptop, LockKeyhole, Mail, RefreshCw, ShieldCheck, SlidersHorizontal, UserRound, XCircle } from "lucide-react";
 import Image from "next/image";
 
 type Props = { email?: string; status?: "none" | "pending" | "denied"; adminHref: string };
@@ -78,6 +78,7 @@ export default function AccessGate({ email = "", status = "none", adminHref }: P
       <nav aria-label="Navegação da página inicial">
         <a href="#sobre">Sobre</a>
         <a href="#como-funciona">Como funciona</a>
+        <a href="#quem-somos">Quem somos</a>
         <a href="#privacidade">Privacidade</a>
       </nav>
       <a className="access-nav-cta" href="#acesso">Entrar <ArrowRight /></a>
@@ -85,9 +86,9 @@ export default function AccessGate({ email = "", status = "none", adminHref }: P
 
     <section className="access-hero">
       <div className="access-hero-copy">
-        <span className="access-kicker">LPNeC · UFPB</span>
-        <h2>Dados oculares prontos para <em>análise.</em></h2>
-        <p>Importe arquivos de eye tracking, escolha as variáveis e gere planilhas organizadas para conferência, SPSS e JASP.</p>
+        <span className="access-kicker">Tabulação de eye tracking</span>
+        <h2>Do dado bruto a uma base que você <em>compreende.</em></h2>
+        <p>O Oculab transforma arquivos de rastreamento ocular em planilhas claras, auditáveis e preparadas para as próximas etapas da pesquisa.</p>
         <div className="access-hero-actions">
           <a className="access-hero-primary" href="#acesso">Acessar o Oculab <ArrowRight /></a>
           <a className="access-hero-secondary" href="#como-funciona">Conhecer o fluxo <ChevronDown /></a>
@@ -121,37 +122,87 @@ export default function AccessGate({ email = "", status = "none", adminHref }: P
     </section>
 
     <section className="access-section access-about" id="sobre">
-      <div className="access-section-heading">
-        <span>Sobre o projeto</span>
-        <h2>Menos etapas manuais. Mais consistência na tabulação.</h2>
-        <p>O LPNeC Oculab foi desenvolvido para apoiar a organização de dados oculomotores em diferentes desenhos de pesquisa.</p>
+      <div className="access-about-heading">
+        <span className="access-section-label">Sobre o projeto</span>
+        <h2>Uma ferramenta construída a partir das rotinas reais de pesquisa.</h2>
       </div>
-      <div className="access-feature-grid">
-        <article><span><FileSpreadsheet /></span><h3>Arquivos flexíveis</h3><p>Reconheça e relacione colunas de diferentes formatos de planilha.</p></article>
-        <article><span><Layers3 /></span><h3>Fluxo orientado</h3><p>Importe, mapeie, configure e revise em etapas claramente separadas.</p></article>
-        <article><span><BarChart3 /></span><h3>Saída organizada</h3><p>Exporte rastreio, resumos e bases preparadas para análise estatística.</p></article>
+      <div className="access-about-copy">
+        <p>O LPNeC Oculab nasceu no Laboratório de Percepção, Neurociências e Comportamento da UFPB para reduzir o trabalho manual envolvido na preparação de dados de eye tracking. Ele organiza em um mesmo percurso tarefas que costumavam exigir sucessivas planilhas, conferências e cálculos separados.</p>
+        <p>O pesquisador continua no controle: relaciona as colunas do arquivo bruto, escolhe as variáveis de interesse e define a estrutura da saída. Assim, a ferramenta se adapta a estudos transversais ou longitudinais e a arquivos com nomes de campos diferentes, sem impor um único modelo de pesquisa.</p>
+        <p>O objetivo não é substituir decisões metodológicas. É tornar a limpeza, a tabulação e a auditoria mais transparentes, rastreáveis e fáceis de revisar antes que os dados sigam para Excel, JASP ou SPSS.</p>
+        <div className="access-principles" aria-label="Princípios do Oculab">
+          <div><strong>Flexível</strong><span>para diferentes tarefas e formatos</span></div>
+          <div><strong>Rastreável</strong><span>para conferir o que foi calculado</span></div>
+          <div><strong>Reprodutível</strong><span>para repetir escolhas com consistência</span></div>
+        </div>
       </div>
     </section>
 
     <section className="access-section access-flow" id="como-funciona">
-      <div className="access-section-heading">
-        <span>Como funciona</span>
-        <h2>Da planilha bruta ao Excel final.</h2>
+      <div className="access-process-copy">
+        <span className="access-section-label">Como funciona</span>
+        <h2>Você decide o caminho. O Oculab organiza a transformação.</h2>
+        <p>O fluxo acompanha o raciocínio do pesquisador: primeiro entender o arquivo, depois definir o que analisar e, por fim, conferir o resultado.</p>
+        <ul>
+          <li><FileSpreadsheet /><span><strong>Importe</strong> um ou vários arquivos e identifique participantes, grupos e momentos.</span></li>
+          <li><SlidersHorizontal /><span><strong>Relacione e configure</strong> as colunas, unidades e variáveis que realmente interessam.</span></li>
+          <li><BarChart3 /><span><strong>Revise</strong> tabelas, sínteses, gráficos e a auditoria dos cálculos.</span></li>
+          <li><Download /><span><strong>Exporte</strong> um Excel organizado para conferência ou análise estatística.</span></li>
+        </ul>
       </div>
-      <ol className="access-flow-list">
-        <li><b>01</b><div><strong>Importe</strong><p>Adicione um ou vários arquivos e identifique participantes e grupos.</p></div></li>
-        <li><b>02</b><div><strong>Mapeie</strong><p>Indique qual coluna do arquivo corresponde a cada informação necessária.</p></div></li>
-        <li><b>03</b><div><strong>Configure</strong><p>Escolha variáveis, unidades, desenho do estudo e formato de saída.</p></div></li>
-        <li><b>04</b><div><strong>Revise</strong><p>Confira tabelas, gráficos e auditoria antes de baixar o Excel.</p></div></li>
-      </ol>
+      <div className="access-process-visual" role="img" aria-label="Uma planilha bruta passa pelo Oculab e se transforma em tabelas, gráficos e um arquivo Excel organizado">
+        <div className="process-sheet process-sheet-raw">
+          <span>arquivo bruto</span>
+          <i /><i /><i /><i /><i /><i /><i /><i /><i />
+        </div>
+        <div className="process-stream process-stream-in" aria-hidden="true"><i /><i /><i /></div>
+        <div className="process-engine">
+          <span className="process-orbit" />
+          <div><Image src="/brand/lpnec-logo-transparent.png" alt="" width={88} height={52} unoptimized /><strong>Oculab</strong><small>mapear · calcular · auditar</small></div>
+        </div>
+        <div className="process-stream process-stream-out" aria-hidden="true"><i /><i /><i /></div>
+        <div className="process-sheet process-sheet-ready">
+          <span>base organizada</span>
+          <div className="process-bars"><b /><b /><b /><b /></div>
+          <div className="process-table-lines"><i /><i /><i /></div>
+        </div>
+      </div>
     </section>
 
-    <section className="access-section access-privacy-section" id="privacidade">
-      <div className="access-privacy-mark"><Eye /></div>
-      <div><span>Privacidade dos dados</span><h2>Seus arquivos permanecem no dispositivo.</h2><p>As planilhas são processadas no navegador e não são armazenadas pelo Oculab. Ao atualizar ou fechar a página, será necessário importá-las novamente.</p></div>
-      <a href="#acesso">Entrar no Oculab <ArrowRight /></a>
+    <section className="access-section access-team" id="quem-somos">
+      <div className="access-team-heading">
+        <span className="access-section-label">Quem somos</span>
+        <h2>Pessoas, pesquisa e desenvolvimento no mesmo projeto.</h2>
+        <p>O Oculab é desenvolvido no contexto do LPNeC, na UFPB. A equipe reúne experiência em pesquisa com comportamento visual e o compromisso de transformar uma rotina técnica em uma experiência mais clara para outros pesquisadores.</p>
+      </div>
+      <article className="access-founder">
+        <div className="access-founder-photo"><Image src="/team-vinicius.jpg" alt="Vinícius Freitas Barbosa da Silva" fill sizes="(max-width: 760px) 100vw, 44vw" unoptimized /></div>
+        <div className="access-founder-copy"><span>Concepção e desenvolvimento</span><h3>Vinícius Freitas Barbosa da Silva</h3><p>Graduando em Psicologia na UFPB e pesquisador do LPNeC. É responsável pela concepção e pelo desenvolvimento do Oculab, projeto que aproxima pesquisa em eye tracking, organização de dados e tecnologia aplicada à ciência.</p></div>
+      </article>
+      <div className="access-team-next" aria-label="Perfis que serão adicionados à equipe">
+        <article><span><UserRound /></span><div><h3>Géssica Almeida de Freitas</h3><p>Perfil de autoria e colaboração em atualização.</p></div></article>
+        <article><span><UserRound /></span><div><h3>Gabriella Medeiros Silva</h3><p>Perfil de autoria e colaboração em atualização.</p></div></article>
+      </div>
     </section>
 
-    <footer className="access-footer"><strong>LPNeC Oculab</strong><span>Laboratório de Percepção, Neurociências e Comportamento · UFPB</span></footer>
+    <section className="access-privacy-section" id="privacidade">
+      <div className="access-privacy-intro">
+        <span className="access-section-label">Privacidade e ética</span>
+        <h2>O dado bruto é processado no seu navegador, do início ao fim.</h2>
+        <p>O Oculab separa os dados de pesquisa das informações usadas para controlar o acesso. Entenda, de forma direta, o que acontece em cada momento.</p>
+      </div>
+      <div className="access-privacy-path">
+        <article><span><FileSpreadsheet /></span><div><strong>Ao selecionar os arquivos</strong><p>O navegador lê as planilhas no próprio dispositivo. Os arquivos brutos não são enviados nem armazenados no servidor do Oculab.</p></div></article>
+        <article><span><Laptop /></span><div><strong>Durante a tabulação</strong><p>Limpeza, cálculos, prévias e gráficos acontecem na memória da sessão. Fechar ou atualizar a página elimina o lote carregado e exige uma nova importação.</p></div></article>
+        <article><span><Download /></span><div><strong>Na exportação</strong><p>O arquivo Excel é gerado para download no dispositivo. A guarda, o compartilhamento e o descarte desse arquivo permanecem sob responsabilidade da equipe de pesquisa.</p></div></article>
+      </div>
+      <div className="access-privacy-details">
+        <article><Cookie /><div><h3>O que fica salvo para o acesso</h3><p>O e-mail informado, o estado da autorização e um identificador técnico de sessão são mantidos para reconhecer usuários aprovados. Um cookie essencial e protegido lembra o acesso neste navegador; ele não contém as planilhas nem os dados dos participantes.</p></div></article>
+        <article><ShieldCheck /><div><h3>Compromisso ético</h3><p>O Oculab foi projetado para apoiar práticas alinhadas aos princípios de finalidade, necessidade, segurança e prevenção da LGPD e às exigências de privacidade e confidencialidade das Resoluções CNS nº 466/2012 e nº 510/2016.</p><p>Isso não substitui a aprovação do estudo pelo sistema CEP/Conep nem as responsabilidades do pesquisador. Sempre que possível, use códigos no lugar de nomes e importe apenas as colunas necessárias.</p><div className="access-norm-links"><a href="https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm" target="_blank" rel="noreferrer">LGPD — Lei nº 13.709/2018</a><a href="https://www.gov.br/conselho-nacional-de-saude/pt-br/acesso-a-informacao/atos-normativos/resolucoes/2012/resolucao-no-466.pdf" target="_blank" rel="noreferrer">Resolução CNS nº 466/2012</a><a href="https://www.gov.br/conselho-nacional-de-saude/pt-br/acesso-a-informacao/camaras-tecnicas-e-comissoes/conep/instancia-de-ciencias-humanas-e-sociais/legislacao/resolucao-no-510-de-07-de-abril-de-2016" target="_blank" rel="noreferrer">Resolução CNS nº 510/2016</a></div></div></article>
+      </div>
+      <a className="access-privacy-cta" href="#acesso">Acessar o Oculab <ArrowRight /></a>
+    </section>
+
+    <footer className="access-footer"><strong>LPNeC Oculab</strong><span>Tabulação de dados de eye tracking para pesquisa científica</span></footer>
   </main>;
 }

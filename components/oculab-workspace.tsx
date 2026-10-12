@@ -13,6 +13,7 @@ import {
   Download,
   FileSpreadsheet,
   FileCheck2,
+  Focus,
   Gauge,
   GripVertical,
   Home,
@@ -34,12 +35,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { detectDurationUnit, detectEventLabels, exportWorkbook, demoRows, readDataFile, suggestMapping } from "@/lib/eye/io";
 import { processEyeData } from "@/lib/eye/engine";
 import { batchMapping, deriveSingleValue, fileStem, normalizeBatchRows } from "@/lib/eye/batch";
 import { customEventKey, customOutputLabel, customOutputScopes, customRawColumn, customSdKey, customSummaryKey } from "@/lib/eye/custom";
-import type { ColumnMap, CustomAggregation, CustomVariableConfig, EngineConfig, FieldKey, MetricKey, ProcessResult, RawRow } from "@/lib/eye/types";
+import type { AoiConfig, AoiDefinition, AoiMetricKey, ColumnMap, CustomAggregation, CustomVariableConfig, EngineConfig, FieldKey, MetricKey, ProcessResult, RawRow } from "@/lib/eye/types";
 
 type WorkbookSheet = { name: string; rows: RawRow[]; headers: string[] };
 type UploadedDataset = {
@@ -53,6 +53,7 @@ type UploadedDataset = {
   fixationLabel: string;
   saccadeLabel: string;
   customMappings: Record<string, string>;
+  aoiBinaryMappings: Record<string, string>;
   participantOverride: string;
   groupOverride: string;
   durationUnit: "ms" | "s";
@@ -65,7 +66,6 @@ const mappingFields: Array<{ key: FieldKey; label: string; hint: string; require
   { key: "moment", label: "Momento", hint: "Coluna com a etapa da coleta, como pré ou pós-teste" },
   { key: "stimulus", label: "Estímulo", hint: "Coluna que identifica cada imagem, slide, cena ou tarefa" },
   { key: "trial", label: "Tentativa", hint: "Coluna que diferencia blocos, ensaios ou repetições" },
-  { key: "aoi", label: "Área de interesse", hint: "Coluna com o nome da AOI, se o estudo utilizar áreas de interesse" },
   { key: "eventType", label: "Tipo de evento", hint: "Coluna cujas células informam se a linha é fixação ou sacada", required: true },
   { key: "fixationId", label: "ID da fixação", hint: "Coluna que repete o mesmo identificador nas amostras da fixação" },
   { key: "saccadeId", label: "ID da sacada", hint: "Coluna que repete o mesmo identificador nas amostras da sacada" },
@@ -98,6 +98,30 @@ const defaultMetrics: Record<MetricKey, boolean> = {
   pupilBinocular: false,
 };
 
+const defaultAoiMetrics: Record<AoiMetricKey, boolean> = {
+  ttff: true,
+  dwellTime: true,
+  fixationCount: true,
+  visitOrder: true,
+  reach: true,
+};
+
+const defaultAoiConfig: AoiConfig = {
+  enabled: false,
+  mode: "labels",
+  timestampUnit: "ms",
+  definitions: [],
+  metrics: defaultAoiMetrics,
+};
+
+const aoiMetricFields: Array<{ key: AoiMetricKey; label: string; detail: string }> = [
+  { key: "ttff", label: "Tempo até a primeira fixação (TTFF)", detail: "Tempo entre o início do estímulo e a primeira fixação dentro da AOI." },
+  { key: "dwellTime", label: "Tempo total de permanência", detail: "Soma das durações de fixação dentro da AOI." },
+  { key: "fixationCount", label: "Número de fixações", detail: "Quantidade de fixações que atingiram a AOI." },
+  { key: "visitOrder", label: "Ordem da primeira visita", detail: "Indica qual AOI foi vista primeiro, segundo, terceiro e assim por diante." },
+  { key: "reach", label: "Alcance entre participantes", detail: "Percentual de participantes que olharam para cada AOI." },
+];
+
 const steps = [
   { id: 1, label: "Importar dados", icon: UploadCloud },
   { id: 2, label: "Mapear colunas", icon: Layers3 },
@@ -121,7 +145,13 @@ const chartMetricOptions: Array<{ key: string; metric: MetricKey; label: string;
   { key: "Pupila_Binocular_Media", metric: "pupilBinocular", label: "Diâmetro pupilar binocular médio", shortLabel: "Pupila binocular", unit: () => "valor do arquivo" },
 ];
 
-const splitList = (value: string) => value.split(/[\n,;]/).map((item) => item.trim()).filter(Boolean);
+const aoiChartMetricOptions: Array<{ key: string; metric: AoiMetricKey; label: string; unit: (durationUnit: string) => string }> = [
+  { key: "TTFF_Medio", metric: "ttff", label: "TTFF médio", unit: (durationUnit) => durationUnit },
+  { key: "Tempo_Total_Permanencia_Medio", metric: "dwellTime", label: "Permanência média", unit: (durationUnit) => durationUnit },
+  { key: "Fixacoes_Medias_AOI", metric: "fixationCount", label: "Média de fixações", unit: () => "fixações" },
+  { key: "Ordem_Media_Primeira_Visita", metric: "visitOrder", label: "Ordem média da visita", unit: () => "posição" },
+  { key: "Alcance_Percentual", metric: "reach", label: "Participantes que olharam", unit: () => "%" },
+];
 
 function DataTable({ rows, limit = 40, headerLabel }: { rows: Record<string, unknown>[]; limit?: number; headerLabel?: (header: string) => string }) {
   const headers = rows.length ? Object.keys(rows[0]) : [];
@@ -144,6 +174,8 @@ function DataTable({ rows, limit = 40, headerLabel }: { rows: Record<string, unk
 export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean }) {
   const fileInput = useRef<HTMLInputElement>(null);
   const presetInput = useRef<HTMLInputElement>(null);
+  const aoiImageInput = useRef<HTMLInputElement>(null);
+  const aoiImageRef = useRef<HTMLImageElement>(null);
   const pointerDragId = useRef<string | null>(null);
   const [step, setStep] = useState(0);
   const [datasets, setDatasets] = useState<UploadedDataset[]>([]);
@@ -152,15 +184,17 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
   const [customVariables, setCustomVariables] = useState<CustomVariableConfig[]>([]);
   const [outputDurationUnit, setOutputDurationUnit] = useState<"ms" | "s">("ms");
   const [amplitudeSource, setAmplitudeSource] = useState<"auto" | "fixation" | "saccade">("auto");
-  const [finalWeighting, setFinalWeighting] = useState<"stimulus" | "event">("stimulus");
-  const [countAggregation, setCountAggregation] = useState<"mean" | "sum">("mean");
   const [excludeMissingStimulus, setExcludeMissingStimulus] = useState(true);
   const [outputSheets, setOutputSheets] = useState<EngineConfig["outputSheets"]>({ eventTrace: true, stimulusSummary: true, participantSummary: true, analysisMatrix: true });
-  const [studyDesign, setStudyDesign] = useState<"cross-sectional" | "longitudinal">("longitudinal");
   const [outputLayout, setOutputLayout] = useState<"long" | "wide" | "both">("both");
-  const [momentsText, setMomentsText] = useState("");
+  const [aoiConfig, setAoiConfig] = useState<AoiConfig>(defaultAoiConfig);
+  const [aoiReferenceImage, setAoiReferenceImage] = useState("");
+  const [aoiImageSize, setAoiImageSize] = useState({ width: 0, height: 0 });
+  const [aoiDrawStart, setAoiDrawStart] = useState<{ x: number; y: number } | null>(null);
+  const [aoiDrawCurrent, setAoiDrawCurrent] = useState<{ x: number; y: number } | null>(null);
   const [result, setResult] = useState<ProcessResult | null>(null);
   const [chartMetric, setChartMetric] = useState("Duracao_Fixacao_Media");
+  const [aoiChartMetric, setAoiChartMetric] = useState("Tempo_Total_Permanencia_Medio");
   const [error, setError] = useState("");
 
   const activeDataset = datasets.find((dataset) => dataset.id === activeDatasetId) ?? datasets[0];
@@ -169,10 +203,11 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
   const mapping = activeDataset?.mapping ?? {};
   const totalRows = datasets.reduce((sum, dataset) => sum + dataset.rows.length, 0);
   const fileName = datasets.length === 1 ? fileStem(datasets[0].fileName) : `lote_${datasets.length}_arquivos`;
-  const mappedCount = Object.values(mapping).filter(Boolean).length;
+  const mappedCount = mappingFields.filter((field) => Boolean(mapping[field.key])).length;
   const requiredReady = Boolean(activeDataset?.mapping.eventType && activeDataset.fixationLabel.trim() && activeDataset.saccadeLabel.trim());
   const allMappingsReady = datasets.length > 0 && datasets.every((dataset) => dataset.mapping.eventType && dataset.fixationLabel.trim() && dataset.saccadeLabel.trim());
-  const selectedMetricCount = Object.values(metrics).filter(Boolean).length + customVariables.length;
+  const selectedAoiMetricCount = aoiConfig.enabled ? Object.values(aoiConfig.metrics).filter(Boolean).length : 0;
+  const selectedMetricCount = Object.values(metrics).filter(Boolean).length + customVariables.length + selectedAoiMetricCount;
   const phase3Selected = Boolean(outputSheets.participantSummary || outputSheets.analysisMatrix);
   const currentNavigationItem = navigationItems.find((item) => item.id === step) ?? navigationItems[0];
 
@@ -192,6 +227,7 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
       fixationLabel: eventLabels.fixation,
       saccadeLabel: eventLabels.saccade,
       customMappings: {},
+      aoiBinaryMappings: {},
       participantOverride: deriveSingleValue(sheet.rows, suggested, "participant"),
       groupOverride: deriveSingleValue(sheet.rows, suggested, "group"),
       durationUnit: detectedUnit ?? "ms",
@@ -214,9 +250,6 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
       }));
       setDatasets((current) => [...current, ...additions]);
       setActiveDatasetId((current) => current || additions[0].id);
-      if (!datasets.length && additions.every((dataset) => !dataset.mapping.moment)) setStudyDesign("cross-sectional");
-      const moments = additions.flatMap((dataset) => dataset.mapping.moment ? dataset.rows.map((row) => String(row[dataset.mapping.moment!] ?? "").trim()).filter(Boolean) : []);
-      if (!momentsText && moments.length) setMomentsText(Array.from(new Set(moments)).join(", "));
       setResult(null);
       setError("");
       if (fileInput.current) fileInput.current.value = "";
@@ -235,7 +268,6 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
     });
     setDatasets(demoDatasets);
     setActiveDatasetId(demoDatasets[0].id);
-    setMomentsText("Momento 1, Momento 2");
     setResult(null);
     setError("");
   };
@@ -299,7 +331,73 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
     setResult(null);
   };
 
-  const normalizedRows = useMemo(() => normalizeBatchRows(datasets, outputDurationUnit, customVariables), [datasets, outputDurationUnit, customVariables]);
+  const addAoiDefinition = (bounds?: Pick<AoiDefinition, "xMin" | "yMin" | "xMax" | "yMax">) => {
+    const id = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+    setAoiConfig((current) => ({
+      ...current,
+      definitions: [...current.definitions, {
+        id,
+        name: `AOI ${current.definitions.length + 1}`,
+        stimulus: "",
+        xMin: bounds?.xMin ?? null,
+        yMin: bounds?.yMin ?? null,
+        xMax: bounds?.xMax ?? null,
+        yMax: bounds?.yMax ?? null,
+      }],
+    }));
+    setResult(null);
+  };
+
+  const updateAoiDefinition = (id: string, patch: Partial<AoiDefinition>) => {
+    setAoiConfig((current) => ({ ...current, definitions: current.definitions.map((definition) => definition.id === id ? { ...definition, ...patch } : definition) }));
+    setResult(null);
+  };
+
+  const removeAoiDefinition = (id: string) => {
+    setAoiConfig((current) => ({ ...current, definitions: current.definitions.filter((definition) => definition.id !== id) }));
+    setDatasets((current) => current.map((dataset) => ({ ...dataset, aoiBinaryMappings: Object.fromEntries(Object.entries(dataset.aoiBinaryMappings).filter(([key]) => key !== id)) })));
+    setResult(null);
+  };
+
+  const numberOrNull = (value: string) => {
+    const parsed = Number(value.replace(",", "."));
+    return value.trim() && Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const onAoiImage = (file?: File) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setAoiReferenceImage(typeof reader.result === "string" ? reader.result : "");
+    reader.readAsDataURL(file);
+  };
+
+  const pointOnAoiImage = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const image = aoiImageRef.current;
+    if (!image || !aoiImageSize.width || !aoiImageSize.height) return null;
+    const rect = image.getBoundingClientRect();
+    return {
+      x: Math.max(0, Math.min(aoiImageSize.width, ((event.clientX - rect.left) / rect.width) * aoiImageSize.width)),
+      y: Math.max(0, Math.min(aoiImageSize.height, ((event.clientY - rect.top) / rect.height) * aoiImageSize.height)),
+    };
+  };
+
+  const finishAoiDrawing = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const end = pointOnAoiImage(event) ?? aoiDrawCurrent;
+    if (aoiDrawStart && end && Math.abs(end.x - aoiDrawStart.x) >= 3 && Math.abs(end.y - aoiDrawStart.y) >= 3) {
+      addAoiDefinition({
+        xMin: Math.round(Math.min(aoiDrawStart.x, end.x)),
+        yMin: Math.round(Math.min(aoiDrawStart.y, end.y)),
+        xMax: Math.round(Math.max(aoiDrawStart.x, end.x)),
+        yMax: Math.round(Math.max(aoiDrawStart.y, end.y)),
+      });
+    }
+    setAoiDrawStart(null);
+    setAoiDrawCurrent(null);
+  };
+
+  const normalizedRows = useMemo(() => normalizeBatchRows(datasets, outputDurationUnit, customVariables, aoiConfig), [datasets, outputDurationUnit, customVariables, aoiConfig]);
+  const observedMoments = useMemo(() => Array.from(new Set(normalizedRows.map((row) => String(row[batchMapping.moment!] ?? "").trim() || "Momento único"))), [normalizedRows]);
+  const studyDesign = observedMoments.length > 1 ? "longitudinal" as const : "cross-sectional" as const;
   const batchGroups = useMemo(() => Array.from(new Set(datasets.flatMap((dataset) => {
     if (dataset.groupOverride.trim()) return [dataset.groupOverride.trim()];
     if (!dataset.mapping.group) return [];
@@ -315,7 +413,7 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
       moment: datasets.some((dataset) => Boolean(dataset.mapping.moment)),
       stimulus: datasets.some((dataset) => Boolean(dataset.mapping.stimulus)),
       trial: datasets.some((dataset) => Boolean(dataset.mapping.trial)),
-      aoi: datasets.some((dataset) => Boolean(dataset.mapping.aoi)),
+      aoi: false,
     },
     studyDesign,
     outputLayout,
@@ -324,16 +422,17 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
     durationUnit: outputDurationUnit,
     outputDurationUnit,
     amplitudeSource,
-    finalWeighting,
-    countAggregation,
+    finalWeighting: "stimulus",
+    countAggregation: "mean",
     excludeMissingStimulus,
     outputSheets,
-    moments: splitList(momentsText),
+    moments: observedMoments,
     groupOrder: batchGroups,
     groupAliases: {},
     metrics,
     customVariables,
-  }), [datasets, studyDesign, outputLayout, outputDurationUnit, amplitudeSource, finalWeighting, countAggregation, excludeMissingStimulus, outputSheets, momentsText, metrics, batchGroups, customVariables]);
+    aoi: aoiConfig,
+  }), [datasets, studyDesign, outputLayout, outputDurationUnit, amplitudeSource, excludeMissingStimulus, outputSheets, observedMoments, metrics, batchGroups, customVariables, aoiConfig]);
 
   const run = () => {
     try {
@@ -344,6 +443,21 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
       if (duplicateNames.length) throw new Error("Dê um nome diferente e não vazio para cada variável adicional.");
       const unmappedCustom = customVariables.filter((variable) => !datasets.some((dataset) => dataset.customMappings[variable.id]));
       if (unmappedCustom.length) throw new Error(`Escolha uma coluna de origem para: ${unmappedCustom.map((variable) => variable.label).join(", ")}.`);
+      if (aoiConfig.enabled) {
+        if (!selectedAoiMetricCount) throw new Error("Selecione pelo menos uma métrica para a análise de AOIs.");
+        if (aoiConfig.mode === "labels" && datasets.some((dataset) => !dataset.mapping.aoi)) throw new Error("Selecione, em cada arquivo, a coluna que contém o nome da AOI.");
+        if (aoiConfig.mode !== "labels") {
+          if (!aoiConfig.definitions.length) throw new Error("Adicione pelo menos uma área de interesse.");
+          const names = aoiConfig.definitions.map((definition) => definition.name.trim().toLocaleLowerCase());
+          if (names.some((name) => !name) || new Set(names).size !== names.length) throw new Error("Dê um nome único e não vazio para cada AOI.");
+        }
+        if (aoiConfig.mode === "binary" && datasets.some((dataset) => aoiConfig.definitions.some((definition) => !dataset.aoiBinaryMappings[definition.id]))) throw new Error("Relacione cada AOI à sua coluna 0/1 em todos os arquivos.");
+        if (aoiConfig.mode === "coordinates") {
+          if (datasets.some((dataset) => !dataset.mapping.gazeX || !dataset.mapping.gazeY)) throw new Error("Selecione as colunas de coordenada X e Y em todos os arquivos.");
+          if (aoiConfig.definitions.some((definition) => [definition.xMin, definition.yMin, definition.xMax, definition.yMax].some((value) => value === null))) throw new Error("Preencha os quatro limites de cada AOI ou desenhe as áreas sobre uma imagem.");
+        }
+        if (aoiConfig.metrics.ttff && datasets.some((dataset) => !dataset.mapping.timestamp)) throw new Error("Para calcular o TTFF, selecione a coluna de tempo/timestamp em todos os arquivos ou desative essa métrica.");
+      }
       if (!outputSheets.eventTrace && !outputSheets.stimulusSummary && !phase3Selected) throw new Error("Selecione pelo menos uma fase para incluir no Excel.");
       const participantGroups = new Map<string, Set<string>>();
       for (const row of normalizedRows) {
@@ -377,7 +491,7 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
   };
 
   const downloadPreset = () => {
-    const blob = new Blob([JSON.stringify({ ...config, mapping: activeDataset?.mapping ?? {}, datasetSettings: activeDataset ? { fixationLabel: activeDataset.fixationLabel, saccadeLabel: activeDataset.saccadeLabel, customMappings: activeDataset.customMappings } : undefined }, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify({ ...config, mapping: activeDataset?.mapping ?? {}, datasetSettings: activeDataset ? { fixationLabel: activeDataset.fixationLabel, saccadeLabel: activeDataset.saccadeLabel, customMappings: activeDataset.customMappings, aoiBinaryMappings: activeDataset.aoiBinaryMappings } : undefined }, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
@@ -389,19 +503,16 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
   const loadPreset = async (file?: File) => {
     if (!file) return;
     try {
-      const saved = JSON.parse(await file.text()) as Partial<EngineConfig> & { datasetSettings?: Partial<Pick<UploadedDataset, "fixationLabel" | "saccadeLabel" | "customMappings">> };
+      const saved = JSON.parse(await file.text()) as Partial<EngineConfig> & { datasetSettings?: Partial<Pick<UploadedDataset, "fixationLabel" | "saccadeLabel" | "customMappings" | "aoiBinaryMappings">> };
       if (saved.mapping && activeDataset) patchDataset(activeDataset.id, { mapping: saved.mapping, ...saved.datasetSettings });
       if (saved.metrics) setMetrics((current) => ({ ...current, ...saved.metrics }));
       if (saved.customVariables) setCustomVariables(saved.customVariables);
-      if (saved.studyDesign) setStudyDesign(saved.studyDesign);
       if (saved.outputLayout) setOutputLayout(saved.outputLayout);
       if (saved.outputDurationUnit) setOutputDurationUnit(saved.outputDurationUnit);
       if (saved.amplitudeSource) setAmplitudeSource(saved.amplitudeSource);
-      if (saved.finalWeighting) setFinalWeighting(saved.finalWeighting);
-      if (saved.countAggregation) setCountAggregation(saved.countAggregation);
       if (typeof saved.excludeMissingStimulus === "boolean") setExcludeMissingStimulus(saved.excludeMissingStimulus);
       if (saved.outputSheets) setOutputSheets(saved.outputSheets);
-      if (saved.moments) setMomentsText(saved.moments.join(", "));
+      if (saved.aoi) setAoiConfig((current) => ({ ...current, ...saved.aoi, metrics: { ...current.metrics, ...saved.aoi?.metrics } }));
       setError("");
     } catch {
       setError("O preset não é um arquivo de configuração válido do LPNeC Oculab.");
@@ -442,8 +553,7 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
       __group: String(row.Grupo ?? "Grupo não informado"),
     }));
     const groups = Array.from(new Set(normalizedRows.map((row) => row.__group)));
-    const configuredMoments = splitList(momentsText);
-    const moments = configuredMoments.length ? configuredMoments : Array.from(new Set(normalizedRows.map((row) => row.__moment)));
+    const moments = Array.from(new Set(normalizedRows.map((row) => row.__moment)));
     const data = moments.map((moment) => {
       const item: Record<string, string | number | null> = { Momento: moment };
       for (const group of groups) {
@@ -457,9 +567,29 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
     });
     const hasValues = data.some((item) => groups.some((group) => typeof item[group] === "number"));
     return { data, groups, moments, hasValues };
-  }, [result, momentsText, activeChartMetric]);
+  }, [result, activeChartMetric]);
 
   const showLineChart = studyDesign === "longitudinal" && chart.moments.length > 1;
+
+  const availableAoiChartMetrics = useMemo(() => aoiChartMetricOptions.filter((option) => aoiConfig.metrics[option.metric]), [aoiConfig.metrics]);
+  const activeAoiChartMetric = availableAoiChartMetrics.find((option) => option.key === aoiChartMetric) ?? availableAoiChartMetrics[0];
+  const aoiChart = useMemo(() => {
+    if (!result || !activeAoiChartMetric) return { data: [] as Record<string, string | number | null>[], groups: [] as string[] };
+    const groups = Array.from(new Set(result.aoiByGroup.map((row) => String(row.Grupo ?? "Grupo não informado"))));
+    const aois = Array.from(new Set(result.aoiByGroup.map((row) => String(row.AOI ?? "")).filter(Boolean)));
+    const data = aois.map((aoi) => {
+      const item: Record<string, string | number | null> = { AOI: aoi };
+      for (const group of groups) {
+        const values = result.aoiByGroup
+          .filter((row) => row.AOI === aoi && String(row.Grupo ?? "Grupo não informado") === group)
+          .map((row) => row[activeAoiChartMetric.key])
+          .filter((value): value is number => typeof value === "number");
+        item[group] = values.length ? Number((values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(2)) : null;
+      }
+      return item;
+    });
+    return { data, groups };
+  }, [result, activeAoiChartMetric]);
 
   const colors = ["#159a91", "#59c777", "#ff7e5f", "#0c1d2a", "#66a8a2", "#9a6a60"];
 
@@ -472,7 +602,6 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
       ...(datasets.some((dataset) => dataset.mapping.moment) ? ["Momento"] : []),
       ...(datasets.some((dataset) => dataset.mapping.stimulus) ? ["Estimulo"] : []),
       ...(datasets.some((dataset) => dataset.mapping.trial) ? ["Tentativa"] : []),
-      ...(datasets.some((dataset) => dataset.mapping.aoi) ? ["AOI"] : []),
     ]);
     const metricVisible = (key: string) =>
       (key.startsWith("N_Fixacoes") && metrics.fixationCount) ||
@@ -636,14 +765,46 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
                 </CardContent>
               </Card>
 
-              <Card className="config-card">
-                <CardHeader><CardTitle>Estrutura do estudo</CardTitle><CardDescription>Informe se cada participante possui uma única coleta ou vários momentos.</CardDescription></CardHeader>
+              <Card className="config-card aoi-config-card">
+                <CardHeader className="aoi-card-head"><div><CardTitle>Áreas de interesse (AOIs)</CardTitle><CardDescription>Ative apenas quando quiser comparar regiões específicas do estímulo.</CardDescription></div><Switch checked={aoiConfig.enabled} onCheckedChange={(enabled) => { setAoiConfig((current) => ({ ...current, enabled })); setResult(null); }} aria-label="Ativar análise de AOIs" /></CardHeader>
                 <CardContent className="form-stack">
-                  <div><Label>Desenho do estudo</Label><Select value={studyDesign} onValueChange={(value) => setStudyDesign(value as "cross-sectional" | "longitudinal")}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="longitudinal">Longitudinal / medidas repetidas</SelectItem><SelectItem value="cross-sectional">Transversal / momento único</SelectItem></SelectContent></Select></div>
-                  {studyDesign === "longitudinal" && <div><Label htmlFor="moments">Momentos esperados, na ordem</Label><Textarea id="moments" value={momentsText} onChange={(event) => setMomentsText(event.target.value)} placeholder="Momento 1, Momento 2, Momento 3" rows={2} /><p className="field-help"><strong>Resultado:</strong> o Oculab criará uma linha para cada momento informado. Quando não houver dados, a linha ficará vazia em vez de desaparecer.</p></div>}
-                  <div><Label>Como formar a média final de cada participante?</Label><Select value={finalWeighting} onValueChange={(value) => setFinalWeighting(value as "stimulus" | "event")}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="stimulus">Calcular cada estímulo antes da média final</SelectItem><SelectItem value="event">Calcular todos os eventos juntos</SelectItem></SelectContent></Select><p className="field-help"><strong>Diferença:</strong> {finalWeighting === "stimulus" ? "cada estímulo terá a mesma influência na média final, mesmo que possua quantidades diferentes de eventos." : "cada evento terá o mesmo peso; portanto, estímulos com mais eventos terão maior influência na média final."}</p></div>
-                  {finalWeighting === "stimulus" && <div><Label>O que mostrar nas contagens finais?</Label><Select value={countAggregation} onValueChange={(value) => setCountAggregation(value as "mean" | "sum")}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="mean">Média da contagem entre estímulos</SelectItem><SelectItem value="sum">Soma das contagens de todos os estímulos</SelectItem></SelectContent></Select><p className="field-help"><strong>Afeta apenas a fase 3:</strong> a fase 2 continuará mostrando a contagem própria de cada estímulo.</p></div>}
-                  <div className="setting-row"><div><strong>Ordem e grupos na fase 3</strong><span>Os participantes seguirão a ordem definida na importação. O grupo informado em cada arquivo será mantido em uma coluna própria.</span></div></div>
+                  {!aoiConfig.enabled ? <div className="aoi-off-state"><Focus /><div><strong>Análise opcional</strong><span>A tabulação padrão continua igual. Ao ativar, o Excel ganha guias próprias para AOIs.</span></div></div> : <>
+                    <div><Label>Como as AOIs aparecem nos arquivos?</Label><div className="aoi-mode-grid" role="radiogroup" aria-label="Origem das AOIs">
+                      {([
+                        { value: "labels", title: "Nome da AOI em uma coluna", detail: "Use quando cada linha já informa a região observada." },
+                        { value: "binary", title: "Uma coluna 0/1 por AOI", detail: "Use exportações que marcam cada região com sim/não ou 1/0." },
+                        { value: "coordinates", title: "Somente coordenadas X e Y", detail: "Desenhe ou informe os limites das regiões no próprio Oculab." },
+                      ] as const).map((option) => <button type="button" role="radio" aria-checked={aoiConfig.mode === option.value} className={aoiConfig.mode === option.value ? "aoi-mode active" : "aoi-mode"} key={option.value} onClick={() => { setAoiConfig((current) => ({ ...current, mode: option.value })); setResult(null); }}><strong>{option.title}</strong><span>{option.detail}</span></button>)}
+                    </div></div>
+
+                    <div className="aoi-subsection"><div className="aoi-section-title"><div><strong>Colunas de cada arquivo</strong><span>O Oculab permite que arquivos diferentes usem nomes de coluna diferentes.</span></div></div>
+                      {datasets.map((dataset) => <div className="aoi-file-row" key={dataset.id}><strong>{dataset.fileName}</strong><div className="aoi-file-fields">
+                        {aoiConfig.mode === "labels" && <div><Label>Coluna com o nome da AOI</Label><Select value={dataset.mapping.aoi ?? "__none__"} onValueChange={(value) => patchDataset(dataset.id, { mapping: { ...dataset.mapping, aoi: value === "__none__" ? undefined : value } })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="__none__">Selecionar coluna</SelectItem>{dataset.headers.map((header) => <SelectItem value={header} key={header}>{header}</SelectItem>)}</SelectContent></Select></div>}
+                        {aoiConfig.mode === "coordinates" && <><div><Label>Coordenada X</Label><Select value={dataset.mapping.gazeX ?? "__none__"} onValueChange={(value) => patchDataset(dataset.id, { mapping: { ...dataset.mapping, gazeX: value === "__none__" ? undefined : value } })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="__none__">Selecionar coluna</SelectItem>{dataset.headers.map((header) => <SelectItem value={header} key={header}>{header}</SelectItem>)}</SelectContent></Select></div><div><Label>Coordenada Y</Label><Select value={dataset.mapping.gazeY ?? "__none__"} onValueChange={(value) => patchDataset(dataset.id, { mapping: { ...dataset.mapping, gazeY: value === "__none__" ? undefined : value } })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="__none__">Selecionar coluna</SelectItem>{dataset.headers.map((header) => <SelectItem value={header} key={header}>{header}</SelectItem>)}</SelectContent></Select></div></>}
+                        {aoiConfig.metrics.ttff && <div><Label>Tempo / timestamp</Label><Select value={dataset.mapping.timestamp ?? "__none__"} onValueChange={(value) => patchDataset(dataset.id, { mapping: { ...dataset.mapping, timestamp: value === "__none__" ? undefined : value } })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="__none__">Selecionar coluna</SelectItem>{dataset.headers.map((header) => <SelectItem value={header} key={header}>{header}</SelectItem>)}</SelectContent></Select></div>}
+                      </div></div>)}
+                    </div>
+
+                    {aoiConfig.mode === "coordinates" && <div className="aoi-subsection"><div className="aoi-section-title"><div><strong>Desenhe as regiões</strong><span>Envie uma imagem do estímulo e arraste para criar retângulos. As coordenadas também podem ser ajustadas abaixo.</span></div><Button type="button" variant="outline" size="sm" onClick={() => aoiImageInput.current?.click()}><UploadCloud /> Escolher imagem</Button><input ref={aoiImageInput} type="file" accept="image/*" hidden onChange={(event) => onAoiImage(event.target.files?.[0])} /></div>
+                      {aoiReferenceImage ? <div className="aoi-draw-area" onPointerDown={(event) => { const point = pointOnAoiImage(event); if (!point) return; event.currentTarget.setPointerCapture(event.pointerId); setAoiDrawStart(point); setAoiDrawCurrent(point); }} onPointerMove={(event) => { if (aoiDrawStart) setAoiDrawCurrent(pointOnAoiImage(event)); }} onPointerUp={finishAoiDrawing} onPointerCancel={() => { setAoiDrawStart(null); setAoiDrawCurrent(null); }}>
+                        {/* A imagem é local e temporária; não deve passar pelo otimizador remoto. */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img ref={aoiImageRef} src={aoiReferenceImage} alt="Referência para desenhar áreas de interesse" draggable={false} onLoad={(event) => setAoiImageSize({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })} />
+                        {aoiConfig.definitions.filter((definition) => definition.xMin !== null && definition.yMin !== null && definition.xMax !== null && definition.yMax !== null).map((definition, index) => <span className="aoi-overlay" key={definition.id} style={{ left: `${(Math.min(definition.xMin!, definition.xMax!) / aoiImageSize.width) * 100}%`, top: `${(Math.min(definition.yMin!, definition.yMax!) / aoiImageSize.height) * 100}%`, width: `${(Math.abs(definition.xMax! - definition.xMin!) / aoiImageSize.width) * 100}%`, height: `${(Math.abs(definition.yMax! - definition.yMin!) / aoiImageSize.height) * 100}%` }}><b>{index + 1}</b>{definition.name}</span>)}
+                        {aoiDrawStart && aoiDrawCurrent && <span className="aoi-overlay drawing" style={{ left: `${(Math.min(aoiDrawStart.x, aoiDrawCurrent.x) / aoiImageSize.width) * 100}%`, top: `${(Math.min(aoiDrawStart.y, aoiDrawCurrent.y) / aoiImageSize.height) * 100}%`, width: `${(Math.abs(aoiDrawCurrent.x - aoiDrawStart.x) / aoiImageSize.width) * 100}%`, height: `${(Math.abs(aoiDrawCurrent.y - aoiDrawStart.y) / aoiImageSize.height) * 100}%` }} />}
+                      </div> : <button type="button" className="aoi-image-empty" onClick={() => aoiImageInput.current?.click()}><Focus /><strong>Adicionar imagem de referência</strong><span>Depois, arraste sobre a imagem para marcar cada AOI.</span></button>}
+                    </div>}
+
+                    {aoiConfig.mode !== "labels" && <div className="aoi-subsection"><div className="aoi-section-title"><div><strong>Áreas configuradas</strong><span>{aoiConfig.mode === "binary" ? "Dê um nome à AOI e relacione a coluna correspondente em cada arquivo." : "Revise o nome, o estímulo e os limites em pixels."}</span></div><Button type="button" variant="outline" size="sm" onClick={() => addAoiDefinition()}><Plus /> Adicionar AOI</Button></div>
+                      {aoiConfig.definitions.length === 0 ? <div className="empty-state compact">Nenhuma AOI adicionada.</div> : <div className="aoi-definition-list">{aoiConfig.definitions.map((definition, index) => <div className="aoi-definition" key={definition.id}><div className="aoi-definition-head"><Badge>{index + 1}</Badge><Input value={definition.name} onChange={(event) => updateAoiDefinition(definition.id, { name: event.target.value })} aria-label={`Nome da AOI ${index + 1}`} /><Button type="button" variant="ghost" size="icon" onClick={() => removeAoiDefinition(definition.id)} aria-label={`Remover ${definition.name}`}><Trash2 /></Button></div>
+                        {aoiConfig.mode === "binary" ? <div className="aoi-binary-map">{datasets.map((dataset) => <div key={dataset.id}><Label>{dataset.fileName}</Label><Select value={dataset.aoiBinaryMappings[definition.id] ?? "__none__"} onValueChange={(value) => patchDataset(dataset.id, { aoiBinaryMappings: { ...dataset.aoiBinaryMappings, [definition.id]: value === "__none__" ? "" : value } })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="__none__">Selecionar coluna 0/1</SelectItem>{dataset.headers.map((header) => <SelectItem value={header} key={header}>{header}</SelectItem>)}</SelectContent></Select></div>)}</div> : <div className="aoi-coordinate-grid"><div><Label>Estímulo (opcional)</Label><Input value={definition.stimulus} onChange={(event) => updateAoiDefinition(definition.id, { stimulus: event.target.value })} placeholder="Vazio = todos os estímulos" /></div>{(["xMin", "yMin", "xMax", "yMax"] as const).map((field) => <div key={field}><Label>{field === "xMin" ? "X inicial" : field === "yMin" ? "Y inicial" : field === "xMax" ? "X final" : "Y final"}</Label><Input inputMode="decimal" value={definition[field] ?? ""} onChange={(event) => updateAoiDefinition(definition.id, { [field]: numberOrNull(event.target.value) })} /></div>)}</div>}
+                      </div>)}</div>}
+                    </div>}
+
+                    <div className="aoi-subsection"><div className="aoi-section-title"><div><strong>Métricas no resultado</strong><span>Cada medida aparecerá em guias próprias por participante e por grupo.</span></div></div><div className="aoi-metrics-grid">{aoiMetricFields.map((metric) => <div className="metric-row" key={metric.key}><div><strong>{metric.label}</strong><span>{metric.detail}</span></div><Switch checked={aoiConfig.metrics[metric.key]} onCheckedChange={(checked) => { setAoiConfig((current) => ({ ...current, metrics: { ...current.metrics, [metric.key]: checked } })); setResult(null); }} /></div>)}</div>
+                      {aoiConfig.metrics.ttff && <div className="aoi-timestamp-unit"><div><strong>Unidade da coluna de tempo</strong><span>Informe a unidade gravada no timestamp. O resultado será convertido para a unidade escolhida no Excel.</span></div><Select value={aoiConfig.timestampUnit} onValueChange={(timestampUnit) => setAoiConfig((current) => ({ ...current, timestampUnit: timestampUnit as "ms" | "s" }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="ms">Milissegundos</SelectItem><SelectItem value="s">Segundos</SelectItem></SelectContent></Select></div>}
+                    </div>
+                  </>}
                 </CardContent>
               </Card>
             </div>
@@ -687,15 +848,20 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
               <div><span>Linhas lidas</span><strong>{result.summary.rawRows.toLocaleString("pt-BR")}</strong><small>total dos arquivos brutos</small></div>
               <div><span>Fixações identificadas</span><strong>{result.summary.fixationEvents.toLocaleString("pt-BR")}</strong><small>IDs únicos de fixação</small></div>
               <div><span>Fixações com sacada seguinte</span><strong>{result.summary.pairedEvents.toLocaleString("pt-BR")}</strong><small>pares cronológicos encontrados</small></div>
-              <div><span>{studyDesign === "longitudinal" ? "Linhas na base longitudinal" : "Linhas na base final"}</span><strong>{result.level2.length.toLocaleString("pt-BR")}</strong><small>{studyDesign === "longitudinal" ? "inclui momentos sem dados" : "casos resumidos"}</small></div>
+              <div><span>Linhas na base estatística</span><strong>{result.level2.length.toLocaleString("pt-BR")}</strong><small>participantes e momentos observados</small></div>
             </div>
 
             <Tabs defaultValue={outputSheets.eventTrace ? "level1" : outputSheets.stimulusSummary ? "stimulus" : "level2"} className="result-tabs">
-              <TabsList variant="line" className="tabs-list"><TabsTrigger value="level1">Fase 1 · rastreio</TabsTrigger><TabsTrigger value="stimulus">Fase 2 · resumo</TabsTrigger><TabsTrigger value="level2">Fase 3 · dados longos</TabsTrigger><TabsTrigger value="wide">Fase 3 · dados amplos</TabsTrigger><TabsTrigger value="chart">Visão geral</TabsTrigger><TabsTrigger value="audit">Auditoria</TabsTrigger></TabsList>
+              <TabsList variant="line" className="tabs-list"><TabsTrigger value="level1">Fase 1 · rastreio</TabsTrigger><TabsTrigger value="stimulus">Fase 2 · resumo</TabsTrigger><TabsTrigger value="level2">Fase 3 · dados longos</TabsTrigger><TabsTrigger value="wide">Fase 3 · dados amplos</TabsTrigger>{aoiConfig.enabled && <TabsTrigger value="aoi">Análise de AOIs</TabsTrigger>}<TabsTrigger value="chart">Visão geral</TabsTrigger><TabsTrigger value="audit">Auditoria</TabsTrigger></TabsList>
               <TabsContent value="level1"><div className="tab-heading"><div><strong>Eventos organizados por estímulo</strong><span>A tabela preserva a ordem dos eventos. Quando houver uma sacada imediatamente após uma fixação, ambas aparecem na mesma linha; as demais sacadas continuam na coluna de duração de sacadas.</span></div><Badge variant="outline">{result.summary.fixationEvents} fixações · {result.summary.saccadeEvents} sacadas</Badge></div><DataTable rows={level1Preview} headerLabel={friendlyHeader} /></TabsContent>
               <TabsContent value="stimulus"><div className="tab-heading"><div><strong>Resumo por estímulo ou slide</strong><span>Cada linha reúne as medidas de um estímulo. No Excel, as linhas destacadas ao final de cada participante mostram média ou total e desvio-padrão.</span></div><Badge variant="outline">{result.byStimulus.length} linhas</Badge></div><DataTable rows={result.byStimulus} headerLabel={friendlyHeader} /></TabsContent>
               <TabsContent value="level2"><div className="tab-heading"><div><strong>Formato longo para SPSS/JASP</strong><span>Cada linha representa a combinação entre um participante e um momento. Este formato é indicado para modelos que analisam observações repetidas em linhas.</span></div><Badge variant="outline">{result.level2.length} linhas</Badge></div><DataTable rows={result.level2} headerLabel={friendlyHeader} /></TabsContent>
               <TabsContent value="wide"><div className="tab-heading"><div><strong>Formato amplo para medidas repetidas</strong><span>Cada participante ocupa uma única linha. As medidas de cada momento aparecem em colunas separadas.</span></div><Badge variant="outline">{result.level2Wide.length} linhas</Badge></div><DataTable rows={result.level2Wide} headerLabel={friendlyHeader} /></TabsContent>
+              {aoiConfig.enabled && <TabsContent value="aoi"><div className="aoi-results"><div className="tab-heading"><div><strong>Comparação entre áreas de interesse</strong><span>As barras apresentam uma síntese descritiva por grupo. As tabelas preservam os resultados individuais para análise.</span></div><Badge variant="outline">{result.aoiByParticipant.length} combinações</Badge></div>
+                <div className="chart-metric-picker" role="tablist" aria-label="Métrica de AOI exibida no gráfico">{availableAoiChartMetrics.map((option) => <button key={option.key} type="button" role="tab" aria-selected={activeAoiChartMetric?.key === option.key} className={activeAoiChartMetric?.key === option.key ? "active" : ""} onClick={() => setAoiChartMetric(option.key)}>{option.label}</button>)}</div>
+                {aoiChart.data.length ? <div className="chart-wrap"><ResponsiveContainer width="100%" height="100%"><BarChart data={aoiChart.data} margin={{ top: 15, right: 24, bottom: 10, left: 2 }}><CartesianGrid strokeDasharray="3 3" stroke="#dbe4ec" /><XAxis dataKey="AOI" tick={{ fill: "#526477", fontSize: 12 }} /><YAxis tick={{ fill: "#526477", fontSize: 12 }} /><Tooltip formatter={(value) => [typeof value === "number" ? value.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) : value, activeAoiChartMetric?.label ?? "Valor"]} contentStyle={{ borderRadius: 12, border: "1px solid #dbe4ec" }} /><Legend />{aoiChart.groups.map((group, index) => <Bar key={group} dataKey={group} fill={colors[index % colors.length]} radius={[5, 5, 0, 0]} maxBarSize={70} />)}</BarChart></ResponsiveContainer></div> : <div className="empty-state">Nenhuma AOI foi identificada. Confira as colunas e os limites configurados.</div>}
+                <div className="aoi-result-tables"><div><h3>Por participante</h3><DataTable rows={result.aoiByParticipant} headerLabel={friendlyHeader} /></div><div><h3>Por grupo</h3><DataTable rows={result.aoiByGroup} headerLabel={friendlyHeader} /></div></div>
+              </div></TabsContent>}
               <TabsContent value="chart">
                 <div className="chart-panel">
                   <div className="tab-heading"><div><strong>{activeChartMetric?.label ?? "Visão geral"} por grupo</strong><span>Média dos participantes em cada grupo. Escolha abaixo o que deseja comparar.</span></div><Badge variant="outline">{activeChartMetric?.unit(outputDurationUnit) ?? ""}</Badge></div>

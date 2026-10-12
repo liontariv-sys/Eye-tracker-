@@ -18,6 +18,8 @@ const aliases: Record<keyof ColumnMap, string[]> = {
   pupilLeft: ["pupilleft", "pupil left", "left pupil", "pupila esquerda"],
   pupilRight: ["pupilright", "pupil right", "right pupil", "pupila direita"],
   timestamp: ["timestamp", "recordingtimestamp", "recording timestamp", "tempo de gravação"],
+  gazeX: ["gazepointx", "gaze point x", "gazex", "gaze x", "cursorx", "cursor x", "fixationpointx", "fixation point x", "coordenada x", "posição x", "posicao x"],
+  gazeY: ["gazepointy", "gaze point y", "gazey", "gaze y", "cursory", "cursor y", "fixationpointy", "fixation point y", "coordenada y", "posição y", "posicao y"],
   sourceFile: ["__oculab_source_file"],
   sourceOrder: ["__oculab_source_order"],
 };
@@ -237,6 +239,48 @@ function phase2Sheet(result: ProcessResult, config: EngineConfig): StyledSheet {
   return { name: "2_Resumo_estimulos", columns, rows, freezeHeader: true };
 }
 
+function aoiSheets(result: ProcessResult, config: EngineConfig): StyledSheet[] {
+  if (!config.aoi?.enabled) return [];
+  const enabled = config.aoi.metrics;
+  const participantColumns: ExportColumn[] = [
+    { key: "Arquivo", header: "Arquivo de origem", width: 30, tone: "context", format: "text" },
+    { key: "Participante", header: "Participante", width: 18, tone: "context", format: "text" },
+    { key: "Grupo", header: "Grupo", width: 18, tone: "context", format: "text" },
+    { key: "Momento", header: "Momento", width: 17, tone: "context", format: "text" },
+    { key: "Estimulo", header: "Estímulo", width: 24, tone: "context", format: "text" },
+    { key: "Tentativa", header: "Tentativa", width: 16, tone: "context", format: "text" },
+    { key: "AOI", header: "Área de interesse (AOI)", width: 24, tone: "context", format: "text" },
+    ...(enabled.reach ? [{ key: "Atingiu_AOI", header: "Olhou para a AOI (0=não; 1=sim)", width: 24, tone: "neutral" as const, format: "integer" as const }] : []),
+    ...(enabled.ttff ? [{ key: "TTFF", header: `Tempo até a primeira fixação (${config.outputDurationUnit})`, width: 30, tone: "fixation" as const, format: "decimal" as const }] : []),
+    ...(enabled.dwellTime ? [{ key: "Tempo_Total_Permanencia", header: `Tempo total de permanência (${config.outputDurationUnit})`, width: 31, tone: "fixation" as const, format: "decimal" as const }] : []),
+    ...(enabled.fixationCount ? [{ key: "N_Fixacoes_AOI", header: "Nº de fixações na AOI", width: 21, tone: "count" as const, format: "integer" as const }] : []),
+    ...(enabled.visitOrder ? [{ key: "Ordem_Primeira_Visita", header: "Ordem da primeira visita", width: 23, tone: "neutral" as const, format: "integer" as const }] : []),
+  ];
+  const groupColumns: ExportColumn[] = [
+    { key: "Grupo", header: "Grupo", width: 18, tone: "context", format: "text" },
+    { key: "Momento", header: "Momento", width: 17, tone: "context", format: "text" },
+    { key: "Estimulo", header: "Estímulo", width: 24, tone: "context", format: "text" },
+    { key: "AOI", header: "Área de interesse (AOI)", width: 24, tone: "context", format: "text" },
+    ...(enabled.reach ? [
+      { key: "Participantes", header: "Participantes", width: 16, tone: "neutral" as const, format: "integer" as const },
+      { key: "Participantes_que_olharam", header: "Participantes que olharam", width: 23, tone: "count" as const, format: "integer" as const },
+      { key: "Alcance_Percentual", header: "Participantes que olharam (%)", width: 25, tone: "count" as const, format: "decimal" as const },
+    ] : []),
+    ...(enabled.ttff ? [{ key: "TTFF_Medio", header: `TTFF médio (${config.outputDurationUnit})`, width: 23, tone: "fixation" as const, format: "decimal" as const }] : []),
+    ...(enabled.dwellTime ? [{ key: "Tempo_Total_Permanencia_Medio", header: `Permanência média (${config.outputDurationUnit})`, width: 27, tone: "fixation" as const, format: "decimal" as const }] : []),
+    ...(enabled.fixationCount ? [{ key: "Fixacoes_Medias_AOI", header: "Média de fixações na AOI", width: 25, tone: "count" as const, format: "decimal" as const }] : []),
+    ...(enabled.visitOrder ? [{ key: "Ordem_Media_Primeira_Visita", header: "Ordem média da primeira visita", width: 28, tone: "neutral" as const, format: "decimal" as const }] : []),
+  ];
+  const makeRows = (rows: Record<string, unknown>[], columns: ExportColumn[]) => rows.map((row, index) => ({
+    cells: columns.map((column) => row[column.key] as string | number | null),
+    band: index % 2 === 1,
+  }));
+  return [
+    { name: "AOI_por_participante", columns: participantColumns, rows: makeRows(result.aoiByParticipant, participantColumns), freezeHeader: true, autoFilter: true },
+    { name: "AOI_por_grupo", columns: groupColumns, rows: makeRows(result.aoiByGroup, groupColumns), freezeHeader: true, autoFilter: true },
+  ];
+}
+
 const metricEnabledForKey = (key: string, config: EngineConfig) => {
   if (key.startsWith("N_Fixacoes")) return config.metrics.fixationCount;
   if (key.startsWith("N_Sacadas_Emparelhadas")) return false;
@@ -333,15 +377,19 @@ function supportSheets(result: ProcessResult, config: EngineConfig, sourceName: 
       { cells: ["Grupo", "A coluna Grupo usa o valor informado para cada arquivo no início da tabulação."] },
       { cells: ["Valores ausentes", "Célula vazia significa dado ausente. Não substitua por zero."] },
       { cells: ["Pupila", "Valores de pupila iguais ou menores que zero foram tratados como ausentes antes das médias."] },
-      { cells: ["Auditoria", "Confira esta guia para saber se as contagens, os pares fixação–sacada e os momentos esperados passaram nas verificações."] },
+      ...(config.aoi?.enabled ? [
+        { cells: ["AOI — participantes", "Uma linha por participante, estímulo e AOI, com as métricas selecionadas pelo pesquisador."] },
+        { cells: ["AOI — grupos", "Compara as AOIs por grupo e mostra médias e alcance percentual sem substituir a análise estatística."] },
+      ] : []),
+      { cells: ["Auditoria", "Confira esta guia para saber se as contagens, os pares fixação–sacada e os dados do lote passaram nas verificações."] },
     ],
   };
   const configRows = [
     ["Arquivo de origem", sourceName], ["Gerado em", new Date().toISOString()], ["Classificação dos eventos", "Os rótulos de cada arquivo foram normalizados como Fixation e Saccade"],
-    ["Unidade usada no processamento", config.durationUnit], ["Unidade de saída", config.outputDurationUnit], ["Desenho do estudo", config.studyDesign], ["Formato para SPSS/JASP", config.outputLayout],
-    ["Origem da amplitude", config.amplitudeSource], ["Cálculo da média final", config.finalWeighting === "stimulus" ? "Mesmo peso para cada estímulo" : "Todos os eventos reunidos"],
-    ["Agregação das contagens", config.countAggregation === "mean" ? "Média por estímulo" : "Total por participante"], ["Ignorar linhas sem estímulo", config.excludeMissingStimulus ? "Sim" : "Não"],
-    ["Momentos esperados", config.moments.join(" | ")],
+    ["Unidade usada no processamento", config.durationUnit], ["Unidade de saída", config.outputDurationUnit], ["Formato para SPSS/JASP", config.outputLayout],
+    ["Origem da amplitude", config.amplitudeSource], ["Síntese por participante", "Média das medidas calculadas por estímulo"],
+    ["Contagens na síntese", "Média das contagens por estímulo"], ["Ignorar linhas sem estímulo", config.excludeMissingStimulus ? "Sim" : "Não"],
+    ...(config.aoi?.enabled ? [["Análise de AOI", config.aoi.mode === "labels" ? "Nomes de AOI no arquivo" : config.aoi.mode === "binary" ? "Colunas 0/1 por AOI" : "Coordenadas X/Y e limites definidos no Oculab"]] : []),
     ...(config.customVariables ?? []).map((variable) => [`Variável adicional: ${variable.label}`, `${variable.eventKind === "fixation" ? "Fixações" : variable.eventKind === "saccade" ? "Sacadas" : "Fixações e sacadas em resultados separados"}; ${variable.aggregation}`]),
     ...Object.entries(config.mapping).map(([key, value]) => [`Mapeamento: ${key}`, value ?? ""]),
   ];
@@ -354,6 +402,7 @@ export function buildExportWorkbookBytes(result: ProcessResult, config: EngineCo
   const sheets: StyledSheet[] = [];
   if (output.eventTrace) sheets.push(phase1Sheet(result, config));
   if (output.stimulusSummary) sheets.push(phase2Sheet(result, config));
+  sheets.push(...aoiSheets(result, config));
   const statSheets: StyledSheet[] = [];
   if (output.participantSummary && config.outputLayout !== "wide") statSheets.push(statisticalSheet("3_SPSS_JASP_longo", result.level2, config, false));
   if (output.analysisMatrix && config.outputLayout !== "long") statSheets.push(statisticalSheet("3_SPSS_JASP_amplo", result.level2Wide, config, true));

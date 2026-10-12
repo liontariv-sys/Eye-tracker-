@@ -160,24 +160,46 @@ test("calcula métricas de AOI e o alcance entre participantes", () => {
   assert.equal(result.aoiByGroup[0].Alcance_Percentual, 50);
 });
 
-test("gera um ponto de calor por fixação e usa a duração como peso", () => {
+test("preserva todas as amostras válidas da fixação e distribui a duração como peso", () => {
   const rows = [
     { p: "P1", g: "controle", m: "pre", media: "A", event: "Fixation", fix: 1, duration: 0.4, x: 100, y: 200 },
     { p: "P1", g: "controle", m: "pre", media: "A", event: "Fixation", fix: 1, duration: 0.4, x: 120, y: 220 },
     { p: "P1", g: "controle", m: "pre", media: "A", event: "Saccade", sac: 1, duration: 0.04, x: 300, y: 400 },
   ];
   const result = processEyeData(rows, config);
-  assert.equal(result.heatmapPoints.length, 1);
-  assert.deepEqual(result.heatmapPoints[0], {
-    Arquivo: "",
-    Participante: "P1",
-    Grupo: "controle",
-    Momento: "pre",
-    Estimulo: "A",
-    Tentativa: "",
-    Fixacao_ID: "1",
-    X: 110,
-    Y: 210,
-    Peso: 400,
+  assert.equal(result.heatmapPoints.length, 2);
+  assert.deepEqual(result.heatmapPoints.map(({ X, Y, Peso }) => ({ X, Y, Peso })), [
+    { X: 100, Y: 200, Peso: 200 },
+    { X: 120, Y: 220, Peso: 200 },
+  ]);
+  assert.equal(result.heatmapPoints.reduce((total, point) => total + point.Peso, 0), 400);
+});
+
+test("AOIs não filtram as fixações usadas no mapa de calor", () => {
+  const rows = [
+    { p: "P1", g: "controle", m: "pre", media: "A", event: "Fixation", fix: 1, duration: 0.1, x: 100, y: 100, __oculab_aoi_names: ["AOI 1"] },
+    { p: "P1", g: "controle", m: "pre", media: "A", event: "Fixation", fix: 2, duration: 0.1, x: 500, y: 300, __oculab_aoi_names: [] },
+    { p: "P1", g: "controle", m: "pre", media: "A", event: "Fixation", fix: 3, duration: 0.1, x: 900, y: 600, __oculab_aoi_names: [] },
+  ];
+  const result = processEyeData(rows, {
+    ...config,
+    aoi: {
+      enabled: true,
+      mode: "coordinates",
+      timestampUnit: "ms",
+      definitions: [
+        { id: "1", name: "AOI 1", stimulus: "A", xMin: 50, yMin: 50, xMax: 200, yMax: 200 },
+        { id: "2", name: "AOI 2", stimulus: "A", xMin: 400, yMin: 200, xMax: 650, yMax: 400 },
+        { id: "3", name: "AOI 3", stimulus: "A", xMin: 800, yMin: 500, xMax: 1000, yMax: 700 },
+      ],
+      metrics: { ttff: false, dwellTime: true, fixationCount: true, visitOrder: true, reach: true },
+    },
   });
+  assert.equal(result.heatmapPoints.length, 3);
+  assert.deepEqual(result.heatmapPoints.map(({ X, Y }) => ({ X, Y })), [
+    { X: 100, Y: 100 },
+    { X: 500, Y: 300 },
+    { X: 900, Y: 600 },
+  ]);
+  assert.equal(result.aoiByParticipant.length, 3);
 });

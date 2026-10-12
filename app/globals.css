@@ -355,6 +355,7 @@ button, input, textarea { font: inherit; }
 .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
 .actions button svg, .stage-toolbar button svg { width: 16px; }
 .config-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.config-layout > .config-card:first-child, .aoi-config-card { grid-column: 1 / -1; }
 .config-card, .metrics-card { border-color: #d9e4eb; box-shadow: 0 8px 24px #163a4f08; }
 .config-card [data-slot="card-title"], .metrics-card [data-slot="card-title"] { font-size: 1rem; }
 .config-card [data-slot="card-description"], .metrics-card [data-slot="card-description"] { font-size: .78rem; }
@@ -363,6 +364,52 @@ button, input, textarea { font: inherit; }
 .form-grid > div, .form-stack > div { display: flex; flex-direction: column; gap: 7px; }
 .form-grid label, .form-stack label { font-size: .78rem; font-weight: 700; }
 .form-stack { display: flex; flex-direction: column; gap: 13px; }
+.aoi-card-head { display: flex; align-items: center; justify-content: space-between; flex-direction: row; gap: 18px; }
+.aoi-off-state { min-height: 80px; display: flex !important; align-items: center; flex-direction: row !important; gap: 13px !important; padding: 15px; border: 1px dashed #bddbd5; border-radius: 13px; background: linear-gradient(135deg, #f6fbfa, #f0faf6); }
+.aoi-off-state svg { width: 26px; color: #159a91; }
+.aoi-off-state strong, .aoi-off-state span { display: block; }
+.aoi-off-state strong { font-size: .86rem; }
+.aoi-off-state span { margin-top: 3px; color: #6f8587; font-size: .74rem; }
+.aoi-mode-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin-top: 4px; }
+.aoi-mode { min-height: 88px; padding: 13px; color: #24454b; text-align: left; border: 1px solid #d8e6e4; border-radius: 12px; background: #fbfdfd; cursor: pointer; }
+.aoi-mode strong, .aoi-mode span { display: block; }
+.aoi-mode strong { font-size: .8rem; }
+.aoi-mode span { margin-top: 5px; color: #718688; font-size: .7rem; line-height: 1.45; }
+.aoi-mode:hover { border-color: #77cfc5; }
+.aoi-mode.active { border-color: #36afa4; background: #effbf7; box-shadow: inset 0 0 0 1px #aae5dc; }
+.aoi-subsection { margin-top: 3px; padding: 15px; border: 1px solid #dce8e6; border-radius: 14px; background: #fbfdfd; }
+.aoi-section-title { display: flex !important; align-items: center; justify-content: space-between; flex-direction: row !important; gap: 16px !important; }
+.aoi-section-title strong, .aoi-section-title span { display: block; }
+.aoi-section-title strong { color: #264a4e; font-size: .86rem; }
+.aoi-section-title span { margin-top: 3px; color: #74888c; font-size: .72rem; }
+.aoi-file-row { display: grid !important; grid-template-columns: minmax(150px, .55fr) minmax(0, 1.8fr); align-items: center; gap: 14px !important; padding: 12px 0; border-bottom: 1px solid #e7eeec; }
+.aoi-file-row:last-child { padding-bottom: 0; border-bottom: 0; }
+.aoi-file-row > strong { min-width: 0; font-size: .76rem; overflow-wrap: anywhere; }
+.aoi-file-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.aoi-file-fields > div, .aoi-binary-map > div, .aoi-coordinate-grid > div { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.aoi-file-fields label, .aoi-binary-map label, .aoi-coordinate-grid label { font-size: .69rem; }
+.aoi-image-empty { width: 100%; min-height: 150px; margin-top: 12px; display: grid; place-items: center; align-content: center; gap: 4px; color: #50706f; border: 1px dashed #8fcac1; border-radius: 13px; background: #f1faf7; cursor: pointer; }
+.aoi-image-empty svg { width: 29px; margin-bottom: 4px; color: #159a91; }
+.aoi-image-empty strong { font-size: .82rem; }
+.aoi-image-empty span { color: #758b8b; font-size: .7rem; }
+.aoi-draw-area { position: relative; width: min(100%, 820px); margin: 12px auto 0; overflow: hidden; border: 1px solid #bdd8d3; border-radius: 13px; background: #dce9e7; touch-action: none; cursor: crosshair; user-select: none; }
+.aoi-draw-area img { width: 100%; height: auto; display: block; pointer-events: none; }
+.aoi-overlay { position: absolute; min-width: 26px; min-height: 22px; display: flex; align-items: flex-start; gap: 5px; padding: 4px; color: white; font-size: .68rem; line-height: 1.2; border: 2px solid #6ff0cb; background: #0b81794d; pointer-events: none; }
+.aoi-overlay b { width: 18px; height: 18px; display: grid; place-items: center; flex: none; color: #083f3b; border-radius: 50%; background: #9bffdf; }
+.aoi-overlay.drawing { border-style: dashed; background: #63dcca36; }
+.aoi-definition-list { display: flex; flex-direction: column; gap: 9px; margin-top: 12px; }
+.aoi-definition { padding: 12px; border: 1px solid #dce7e5; border-radius: 11px; background: white; }
+.aoi-definition-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+.aoi-definition-head input { font-weight: 700; }
+.aoi-definition-head button { color: #a64c43; }
+.aoi-binary-map { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 10px; }
+.aoi-coordinate-grid { display: grid; grid-template-columns: 1.4fr repeat(4, minmax(86px, .65fr)); gap: 8px; margin-top: 10px; }
+.aoi-metrics-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 22px; }
+.aoi-timestamp-unit { display: grid !important; grid-template-columns: 1fr 220px; align-items: center; gap: 18px !important; margin-top: 12px; padding: 12px 13px; border: 1px solid #cfe2de; border-radius: 11px; background: #f3faf8; }
+.aoi-timestamp-unit strong, .aoi-timestamp-unit span { display: block; }
+.aoi-timestamp-unit strong { font-size: .78rem; }
+.aoi-timestamp-unit span { margin-top: 3px; color: #708583; font-size: .7rem; }
+.empty-state.compact { padding: 22px 14px; }
 .field-help { margin: 2px 0 0; color: #657b87; font-size: .76rem; line-height: 1.52; }
 .field-help strong { color: #2b615c; font-weight: 760; }
 .detection-badge { margin-left: 6px; vertical-align: middle; color: #087b68; border-color: #8bd9cd; background: #eaffed; font-size: .63rem; }
@@ -430,6 +477,9 @@ button, input, textarea { font: inherit; }
 .chart-metric-picker button:hover { color: #0b756f; border-color: #8bd6cf; }
 .chart-metric-picker button.active { color: white; border-color: #11877f; background: linear-gradient(135deg, #0b8179, #159a91); box-shadow: 0 5px 14px #159a9125; }
 .chart-wrap { width: 100%; height: 330px; padding: 8px 10px 2px; }
+.aoi-result-tables { display: grid; gap: 16px; padding: 16px; background: #f7faf9; }
+.aoi-result-tables > div { overflow: hidden; border: 1px solid #dce7e5; border-radius: 12px; background: white; }
+.aoi-result-tables h3 { margin: 0; padding: 12px 14px; color: #294d51; font-size: .8rem; border-bottom: 1px solid #e4ecea; }
 .audit-list { padding: 10px 16px 18px; }
 .audit-item { display: grid; grid-template-columns: 26px 1fr auto; align-items: center; gap: 12px; padding: 15px 4px; border-bottom: 1px solid #e8edf1; }
 .audit-item svg { width: 21px; color: #16845c; }
@@ -543,6 +593,8 @@ button, input, textarea { font: inherit; }
   .welcome-panel { grid-template-columns: 1fr; }
   .welcome-outcome { max-width: 520px; }
   .format-grid { grid-template-columns: 1fr 1fr; }
+  .aoi-coordinate-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .aoi-coordinate-grid > div:first-child { grid-column: 1 / -1; }
   .phase3-card { grid-column: 1 / -1; }
   .home-hero { grid-template-columns: 1fr; }
   .home-hero-mark { max-width: 560px; min-height: 150px; }
@@ -597,6 +649,12 @@ button, input, textarea { font: inherit; }
   .welcome-copy p { font-size: .92rem; }
   .journey-title { align-items: flex-start; flex-direction: column; gap: 3px; }
   .product-journey, .config-layout, .metrics-grid, .form-grid, .format-grid { grid-template-columns: 1fr; }
+  .aoi-mode-grid, .aoi-metrics-grid, .aoi-file-fields, .aoi-binary-map, .aoi-coordinate-grid { grid-template-columns: 1fr; }
+  .aoi-file-row { grid-template-columns: 1fr; align-items: stretch; }
+  .aoi-coordinate-grid > div:first-child { grid-column: auto; }
+  .aoi-section-title { align-items: stretch; flex-direction: column !important; }
+  .aoi-section-title button { width: 100%; }
+  .aoi-timestamp-unit { grid-template-columns: 1fr; }
   .phase3-card { grid-column: auto; }
   .phase3-options { margin: 0 16px 18px; align-items: stretch; flex-direction: column; gap: 12px; }
   .phase3-options [data-slot="select-trigger"] { width: 100%; }

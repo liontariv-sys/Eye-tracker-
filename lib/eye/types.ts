@@ -60,8 +60,24 @@ export interface AoiConfig {
   enabled: boolean;
   mode: AoiSourceMode;
   timestampUnit: "ms" | "s";
+  coordinateSpace?: "auto" | "pixels" | "normalized";
+  imageWidth?: number;
+  imageHeight?: number;
   definitions: AoiDefinition[];
   metrics: Record<AoiMetricKey, boolean>;
+}
+
+export interface HeatmapPoint {
+  Arquivo: string;
+  Participante: string;
+  Grupo: string;
+  Momento: string;
+  Estimulo: string;
+  Tentativa: string;
+  Fixacao_ID: string;
+  X: number;
+  Y: number;
+  Peso: number;
 }
 
 export interface EngineConfig {
@@ -132,6 +148,7 @@ export interface ProcessResult {
   byStimulus: Level2Row[];
   aoiByParticipant: Level2Row[];
   aoiByGroup: Level2Row[];
+  heatmapPoints: HeatmapPoint[];
   audit: AuditItem[];
   summary: {
     rawRows: number;

@@ -1,6 +1,7 @@
 import {
   type AuditItem,
   type EngineConfig,
+  type HeatmapPoint,
   type Level1Row,
   type Level2Row,
   type ProcessResult,
@@ -21,6 +22,8 @@ type Event = {
   aoiShares: Record<string, number>;
   aoiEntryTimestamps: Record<string, number>;
   timestamp: number | null;
+  gazeX: number | null;
+  gazeY: number | null;
   startRow: number;
   endRow: number;
   duration: number | null;
@@ -101,6 +104,8 @@ function collapseEvents(rows: RawRow[], config: EngineConfig) {
     aoi: string;
     aoiSamples: string[][];
     timestamps: Array<number | null>;
+    gazeXs: Array<number | null>;
+    gazeYs: Array<number | null>;
     rows: number[];
     durations: Array<number | null>;
     amplitudes: Array<number | null>;
@@ -134,6 +139,8 @@ function collapseEvents(rows: RawRow[], config: EngineConfig) {
       aoiShares,
       aoiEntryTimestamps: Object.fromEntries(aoiEntryTimestamps),
       timestamp: active.timestamps.find((value) => value !== null) ?? null,
+      gazeX: round(mean(active.gazeXs)),
+      gazeY: round(mean(active.gazeYs)),
       startRow: Math.min(...active.rows),
       endRow: Math.max(...active.rows),
       duration: round(convertDuration(firstDuration, config)),
@@ -200,6 +207,8 @@ function collapseEvents(rows: RawRow[], config: EngineConfig) {
         aoi,
         aoiSamples: [],
         timestamps: [],
+        gazeXs: [],
+        gazeYs: [],
         rows: [],
         durations: [],
         amplitudes: [],
@@ -222,6 +231,8 @@ function collapseEvents(rows: RawRow[], config: EngineConfig) {
     active!.rows.push(index + 2);
     active!.aoiSamples.push(normalizedAois);
     active!.timestamps.push(numberValue(mapped(row, config, "timestamp")));
+    active!.gazeXs.push(numberValue(mapped(row, config, "gazeX")));
+    active!.gazeYs.push(numberValue(mapped(row, config, "gazeY")));
     active!.durations.push(numberValue(mapped(row, config, "duration")));
     active!.amplitudes.push(numberValue(mapped(row, config, "amplitude")));
     active!.pupilsLeft.push(cleanPupil("pupilLeft"));
@@ -629,6 +640,25 @@ function makeAoiSummaries(events: Event[], config: EngineConfig) {
   return { byParticipant, byGroup };
 }
 
+function makeHeatmapPoints(events: Event[]): HeatmapPoint[] {
+  return events.flatMap((event) => {
+    if (event.kind !== "fixation" || event.gazeX === null || event.gazeY === null) return [];
+    if (!Number.isFinite(event.gazeX) || !Number.isFinite(event.gazeY) || event.gazeX < 0 || event.gazeY < 0) return [];
+    return [{
+      Arquivo: event.sourceFile,
+      Participante: event.participant,
+      Grupo: event.group,
+      Momento: event.moment,
+      Estimulo: event.stimulus,
+      Tentativa: event.trial,
+      Fixacao_ID: event.id,
+      X: event.gazeX,
+      Y: event.gazeY,
+      Peso: event.duration !== null && event.duration > 0 ? event.duration : 1,
+    }];
+  });
+}
+
 export function processEyeData(rows: RawRow[], config: EngineConfig): ProcessResult {
   if (!config.mapping.eventType) throw new Error("Mapeie a coluna de tipo do evento.");
   const normalizedConfig: EngineConfig = {
@@ -646,6 +676,7 @@ export function processEyeData(rows: RawRow[], config: EngineConfig): ProcessRes
   const level2Full = makeParticipantSummary(level1Full, byStimulusFull, normalizedConfig);
   const level2WideFull = toWide(level2Full, config);
   const aoiSummaries = makeAoiSummaries(events, normalizedConfig);
+  const heatmapPoints = makeHeatmapPoints(events);
   const fixationEvents = events.filter((event) => event.kind === "fixation").length;
   const saccadeEvents = events.filter((event) => event.kind === "saccade").length;
   const pairedEvents = level1Full.filter((row) => row.Sacada_Emparelhada).length;
@@ -715,6 +746,7 @@ export function processEyeData(rows: RawRow[], config: EngineConfig): ProcessRes
     byStimulus: filterMetrics(byStimulusFull, config),
     aoiByParticipant: aoiSummaries.byParticipant,
     aoiByGroup: aoiSummaries.byGroup,
+    heatmapPoints,
     audit,
     summary: { rawRows: rows.length, fixationEvents, saccadeEvents, pairedEvents, invalidPupilValues, participants, expectedLongitudinalRows, excludedMissingStimulusRows, resolvedAmplitudeSource, sourceFiles },
   };

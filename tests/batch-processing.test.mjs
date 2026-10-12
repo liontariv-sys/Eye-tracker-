@@ -135,3 +135,32 @@ test("mantém a mesma variável separada entre fixações e sacadas", () => {
   assert.equal(result.byStimulus[0][customSummaryKey("comum", "fixation")], 20);
   assert.equal(result.byStimulus[0][customSummaryKey("comum", "saccade")], 30);
 });
+
+test("ajusta coordenadas normalizadas à imagem antes de classificar a AOI", () => {
+  const datasets = [{
+    id: "coordenadas",
+    fileName: "coordenadas.xlsx",
+    durationUnit: "ms",
+    participantOverride: "P06",
+    groupOverride: "Grupo A",
+    mapping: { eventType: "evento", fixationId: "fix", duration: "tempo", stimulus: "estimulo", gazeX: "x", gazeY: "y" },
+    rows: [{ evento: "Fixation", fix: 1, tempo: 240, estimulo: "Tela", x: 0.5, y: 0.25 }],
+  }];
+  const aoi = {
+    enabled: true,
+    mode: "coordinates",
+    timestampUnit: "ms",
+    coordinateSpace: "auto",
+    imageWidth: 1200,
+    imageHeight: 800,
+    definitions: [{ id: "centro", name: "Centro", stimulus: "Tela", xMin: 500, yMin: 150, xMax: 700, yMax: 260 }],
+    metrics: { ttff: false, dwellTime: true, fixationCount: true, visitOrder: false, reach: true },
+  };
+  const normalized = normalizeBatchRows(datasets, "ms", [], aoi);
+  assert.equal(normalized[0][batchMapping.gazeX], 600);
+  assert.equal(normalized[0][batchMapping.gazeY], 200);
+  assert.deepEqual(normalized[0].__oculab_aoi_names, ["Centro"]);
+  const result = processEyeData(normalized, { ...config, aoi });
+  assert.equal(result.heatmapPoints[0].X, 600);
+  assert.equal(result.aoiByParticipant[0].N_Fixacoes_AOI, 1);
+});

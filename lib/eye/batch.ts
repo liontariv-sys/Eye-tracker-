@@ -92,6 +92,11 @@ export function normalizeBatchRows(datasets: BatchDatasetInput[], outputUnit: "m
     const rawY = value(row, dataset.mapping, "gazeY");
     const x = numeric(rawX);
     const y = numeric(rawY);
+    const coordinateSpace = aoiConfig?.coordinateSpace ?? "auto";
+    const usesNormalizedCoordinates = coordinateSpace === "normalized"
+      || (coordinateSpace === "auto" && x !== null && y !== null && x >= 0 && x <= 1 && y >= 0 && y <= 1);
+    const scaledX = x === null ? null : usesNormalizedCoordinates && aoiConfig?.imageWidth ? x * aoiConfig.imageWidth : x;
+    const scaledY = y === null ? null : usesNormalizedCoordinates && aoiConfig?.imageHeight ? y * aoiConfig.imageHeight : y;
     const labelAoi = text(value(row, dataset.mapping, "aoi"));
     const aoiNames = !aoiConfig?.enabled
       ? []
@@ -103,12 +108,12 @@ export function normalizeBatchRows(datasets: BatchDatasetInput[], outputUnit: "m
             return column ? isMarked(row[column]) : false;
           }).map((definition) => definition.name.trim()).filter(Boolean)
           : aoiConfig.definitions.filter((definition) => {
-            if (x === null || y === null || definition.xMin === null || definition.yMin === null || definition.xMax === null || definition.yMax === null) return false;
+            if (scaledX === null || scaledY === null || definition.xMin === null || definition.yMin === null || definition.xMax === null || definition.yMax === null) return false;
             if (definition.stimulus.trim() && !sameLabel(text(stimulus), definition.stimulus.trim())) return false;
-            return x >= Math.min(definition.xMin, definition.xMax)
-              && x <= Math.max(definition.xMin, definition.xMax)
-              && y >= Math.min(definition.yMin, definition.yMax)
-              && y <= Math.max(definition.yMin, definition.yMax);
+            return scaledX >= Math.min(definition.xMin, definition.xMax)
+              && scaledX <= Math.max(definition.xMin, definition.xMax)
+              && scaledY >= Math.min(definition.yMin, definition.yMax)
+              && scaledY <= Math.max(definition.yMin, definition.yMax);
           }).map((definition) => definition.name.trim()).filter(Boolean);
     return {
       [batchMapping.participant!]: participant,
@@ -125,8 +130,8 @@ export function normalizeBatchRows(datasets: BatchDatasetInput[], outputUnit: "m
       [batchMapping.pupilLeft!]: value(row, dataset.mapping, "pupilLeft"),
       [batchMapping.pupilRight!]: value(row, dataset.mapping, "pupilRight"),
       [batchMapping.timestamp!]: value(row, dataset.mapping, "timestamp"),
-      [batchMapping.gazeX!]: rawX,
-      [batchMapping.gazeY!]: rawY,
+      [batchMapping.gazeX!]: scaledX,
+      [batchMapping.gazeY!]: scaledY,
       [batchMapping.sourceFile!]: dataset.fileName,
       [batchMapping.sourceOrder!]: datasetIndex + 1,
       __oculab_aoi_names: aoiNames,

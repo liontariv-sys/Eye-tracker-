@@ -15,6 +15,8 @@ const config = {
     amplitude: "amplitude",
     pupilLeft: "left",
     pupilRight: "right",
+    gazeX: "x",
+    gazeY: "y",
   },
   studyDesign: "longitudinal",
   outputLayout: "both",
@@ -156,4 +158,26 @@ test("calcula métricas de AOI e o alcance entre participantes", () => {
   assert.equal(result.aoiByParticipant[0].N_Fixacoes_AOI, 1);
   assert.equal(result.aoiByParticipant[1].Atingiu_AOI, 0);
   assert.equal(result.aoiByGroup[0].Alcance_Percentual, 50);
+});
+
+test("gera um ponto de calor por fixação e usa a duração como peso", () => {
+  const rows = [
+    { p: "P1", g: "controle", m: "pre", media: "A", event: "Fixation", fix: 1, duration: 0.4, x: 100, y: 200 },
+    { p: "P1", g: "controle", m: "pre", media: "A", event: "Fixation", fix: 1, duration: 0.4, x: 120, y: 220 },
+    { p: "P1", g: "controle", m: "pre", media: "A", event: "Saccade", sac: 1, duration: 0.04, x: 300, y: 400 },
+  ];
+  const result = processEyeData(rows, config);
+  assert.equal(result.heatmapPoints.length, 1);
+  assert.deepEqual(result.heatmapPoints[0], {
+    Arquivo: "",
+    Participante: "P1",
+    Grupo: "controle",
+    Momento: "pre",
+    Estimulo: "A",
+    Tentativa: "",
+    Fixacao_ID: "1",
+    X: 110,
+    Y: 210,
+    Peso: 400,
+  });
 });

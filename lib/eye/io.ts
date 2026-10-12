@@ -423,12 +423,52 @@ export function exportWorkbook(result: ProcessResult, config: EngineConfig, sour
   URL.revokeObjectURL(url);
 }
 
+type DemoFixation = { x: number; y: number; duration: number; aoi: string };
+
+function demoParticipantRows(participant: string, group: string, fixations: DemoFixation[]): RawRow[] {
+  const rows: RawRow[] = [];
+  let timestamp = 850;
+  fixations.forEach((fixation, index) => {
+    const fixationId = index + 1;
+    const leftPupil = Number((3.05 + (index % 4) * 0.08 + (participant === "P02" ? 0.12 : 0)).toFixed(2));
+    const rightPupil = Number((leftPupil - 0.06).toFixed(2));
+    rows.push(
+      { Participante: participant, Grupo: group, Momento: "Momento único", MediaName: "Estimulo_01.JPG", Tentativa: "T1", RecordingTimestamp: timestamp, GazeEventType: "Fixation", FixationIndex: fixationId, SaccadeIndex: null, GazeEventDuration: fixation.duration / 1000, SaccadicAmplitude: null, GazePointX: fixation.x - 5, GazePointY: fixation.y + 3, AOI: fixation.aoi, PupilLeft: leftPupil, PupilRight: rightPupil },
+      { Participante: participant, Grupo: group, Momento: "Momento único", MediaName: "Estimulo_01.JPG", Tentativa: "T1", RecordingTimestamp: timestamp + Math.round(fixation.duration / 2), GazeEventType: "Fixation", FixationIndex: fixationId, SaccadeIndex: null, GazeEventDuration: fixation.duration / 1000, SaccadicAmplitude: null, GazePointX: fixation.x + 5, GazePointY: fixation.y - 3, AOI: fixation.aoi, PupilLeft: Number((leftPupil + 0.03).toFixed(2)), PupilRight: Number((rightPupil + 0.02).toFixed(2)) },
+    );
+    timestamp += fixation.duration;
+    if (index < fixations.length - 1) {
+      const next = fixations[index + 1];
+      const saccadeDuration = 32 + (index % 4) * 6;
+      const distance = Math.hypot(next.x - fixation.x, next.y - fixation.y);
+      rows.push({ Participante: participant, Grupo: group, Momento: "Momento único", MediaName: "Estimulo_01.JPG", Tentativa: "T1", RecordingTimestamp: timestamp, GazeEventType: "Saccade", FixationIndex: null, SaccadeIndex: fixationId, GazeEventDuration: saccadeDuration / 1000, SaccadicAmplitude: Number((distance / 92).toFixed(2)), GazePointX: Math.round((fixation.x + next.x) / 2), GazePointY: Math.round((fixation.y + next.y) / 2), AOI: "", PupilLeft: null, PupilRight: null });
+      timestamp += saccadeDuration;
+    }
+  });
+  return rows;
+}
+
 export const demoRows: RawRow[] = [
-  { Participante: "P01", Grupo: "Grupo A", Momento: "Momento 1", MediaName: "Estimulo_01", Tentativa: "T1", GazeEventType: "Fixation", FixationIndex: 1, SaccadeIndex: null, GazeEventDuration: 0.42, SaccadicAmplitude: null, PupilLeft: 3.24, PupilRight: 3.11 },
-  { Participante: "P01", Grupo: "Grupo A", Momento: "Momento 1", MediaName: "Estimulo_01", Tentativa: "T1", GazeEventType: "Fixation", FixationIndex: 1, SaccadeIndex: null, GazeEventDuration: 0.42, SaccadicAmplitude: null, PupilLeft: 3.28, PupilRight: 0 },
-  { Participante: "P01", Grupo: "Grupo A", Momento: "Momento 1", MediaName: "Estimulo_01", Tentativa: "T1", GazeEventType: "Saccade", FixationIndex: null, SaccadeIndex: 1, GazeEventDuration: 0.046, SaccadicAmplitude: 4.82, PupilLeft: null, PupilRight: null },
-  { Participante: "P01", Grupo: "Grupo A", Momento: "Momento 1", MediaName: "Estimulo_01", Tentativa: "T1", GazeEventType: "Fixation", FixationIndex: 2, SaccadeIndex: null, GazeEventDuration: 0.31, SaccadicAmplitude: null, PupilLeft: 3.09, PupilRight: 3.04 },
-  { Participante: "P01", Grupo: "Grupo A", Momento: "Momento 1", MediaName: "Estimulo_01", Tentativa: "T1", GazeEventType: "Saccade", FixationIndex: null, SaccadeIndex: 2, GazeEventDuration: 0.039, SaccadicAmplitude: 3.71, PupilLeft: null, PupilRight: null },
-  { Participante: "P02", Grupo: "Grupo B", Momento: "Momento 2", MediaName: "Estimulo_02", Tentativa: "T1", GazeEventType: "Fixation", FixationIndex: 1, SaccadeIndex: null, GazeEventDuration: 0.37, SaccadicAmplitude: null, PupilLeft: 3.51, PupilRight: 3.43 },
-  { Participante: "P02", Grupo: "Grupo B", Momento: "Momento 2", MediaName: "Estimulo_02", Tentativa: "T1", GazeEventType: "Saccade", FixationIndex: null, SaccadeIndex: 1, GazeEventDuration: 0.052, SaccadicAmplitude: 5.16, PupilLeft: null, PupilRight: null },
+  ...demoParticipantRows("P01", "Grupo controle", [
+    { x: 215, y: 155, duration: 310, aoi: "Título" },
+    { x: 365, y: 214, duration: 260, aoi: "Título" },
+    { x: 820, y: 244, duration: 420, aoi: "Imagem principal" },
+    { x: 970, y: 320, duration: 355, aoi: "Imagem principal" },
+    { x: 760, y: 430, duration: 280, aoi: "Imagem principal" },
+    { x: 280, y: 548, duration: 230, aoi: "Botão de ação" },
+    { x: 430, y: 368, duration: 190, aoi: "" },
+    { x: 885, y: 285, duration: 390, aoi: "Imagem principal" },
+    { x: 255, y: 560, duration: 245, aoi: "Botão de ação" },
+  ]),
+  ...demoParticipantRows("P02", "Grupo experimental", [
+    { x: 270, y: 170, duration: 245, aoi: "Título" },
+    { x: 735, y: 205, duration: 330, aoi: "Imagem principal" },
+    { x: 910, y: 270, duration: 515, aoi: "Imagem principal" },
+    { x: 1040, y: 390, duration: 410, aoi: "Imagem principal" },
+    { x: 845, y: 455, duration: 345, aoi: "Imagem principal" },
+    { x: 315, y: 565, duration: 360, aoi: "Botão de ação" },
+    { x: 245, y: 550, duration: 305, aoi: "Botão de ação" },
+    { x: 510, y: 250, duration: 205, aoi: "Título" },
+    { x: 930, y: 335, duration: 455, aoi: "Imagem principal" },
+  ]),
 ];

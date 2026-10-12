@@ -103,3 +103,42 @@ test("exporta vários arquivos em blocos e leva o grupo para SPSS/JASP", () => {
   assert.match(packageText, /experimental\.xlsx/);
   assert.match(packageText, /Experimental/);
 });
+
+test("exporta guias próprias para análise de AOIs", () => {
+  const aoi = {
+    enabled: true,
+    mode: "labels",
+    timestampUnit: "ms",
+    definitions: [],
+    metrics: { ttff: true, dwellTime: true, fixationCount: true, visitOrder: true, reach: true },
+  };
+  const datasets = [{
+    id: "1",
+    fileName: "aoi.xlsx",
+    durationUnit: "ms",
+    participantOverride: "P01",
+    groupOverride: "Controle",
+    mapping: { eventType: "e", fixationId: "i", duration: "d", stimulus: "s", aoi: "regiao", timestamp: "t" },
+    rows: [
+      { e: "Fixation", i: 1, d: 100, s: "Tela", regiao: null, t: 0 },
+      { e: "Fixation", i: 2, d: 250, s: "Tela", regiao: "Botão", t: 180 },
+    ],
+  }];
+  const batchConfig = {
+    ...config,
+    mapping: batchMapping,
+    contextFields: { sourceFile: true, participant: true, group: true, moment: false, stimulus: true, trial: false, aoi: false },
+    studyDesign: "cross-sectional",
+    moments: [],
+    aoi,
+  };
+  const normalized = normalizeBatchRows(datasets, "ms", [], aoi);
+  const bytes = buildExportWorkbookBytes(processEyeData(normalized, batchConfig), batchConfig, "aoi");
+  const workbook = XLSX.read(bytes, { type: "array" });
+  assert.ok(workbook.SheetNames.includes("AOI_por_participante"));
+  assert.ok(workbook.SheetNames.includes("AOI_por_grupo"));
+  const row = XLSX.utils.sheet_to_json(workbook.Sheets["AOI_por_participante"], { defval: null })[0];
+  assert.equal(row["Área de interesse (AOI)"], "Botão");
+  assert.equal(row["Tempo até a primeira fixação (ms)"], 180);
+  assert.equal(row["Tempo total de permanência (ms)"], 250);
+});

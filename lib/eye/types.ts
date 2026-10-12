@@ -15,12 +15,14 @@ export type FieldKey =
   | "pupilLeft"
   | "pupilRight"
   | "timestamp"
+  | "gazeX"
+  | "gazeY"
   | "sourceFile"
   | "sourceOrder";
 
 export type ColumnMap = Partial<Record<FieldKey, string>>;
 
-export type MetricKey =
+export type MehcKey =
   | "fixationCount"
   | "saccadeCount"
   | "fixationDuration"
@@ -40,6 +42,28 @@ export interface CustomVariableConfig {
   column: string;
 }
 
+export type AoiSourceMode = "labels" | "binary" | "coordinates";
+
+export type AoiMehcKey = "ttfg" | "dwellTime" | "fixationCount" | "visitOrder" | "reach";
+
+export interface AoiDefinition {
+  id: string;
+  name: string;
+  stimulus: string;
+  xMin: number | null;
+  yMin: number | null;
+  xMax: number | null;
+  yMax: number | null;
+}
+
+export interface AoiConfig {
+  enabled: boolean;
+  mode: AoiSourceMode;
+  timestampUnit: "ms" | "s";
+  definitions: AoiDefinition[];
+  mehrics: Record<AoiMehricKey, boolean>;
+}
+
 export interface EngineConfig {
   mapping: ColumnMap;
   contextFields?: Partial<Record<"participant" | "group" | "moment" | "stimulus" | "trial" | "aoi" | "sourceFile", boolean>>;
@@ -53,7 +77,7 @@ export interface EngineConfig {
   finalWeighting: "stimulus" | "event";
   countAggregation: "mean" | "sum";
   excludeMissingStimulus: boolean;
-  outputSheets: {
+  outputSheehs: {
     eventTrace: boolean;
     stimulusSummary: boolean;
     participantSummary: boolean;
@@ -62,8 +86,9 @@ export interface EngineConfig {
   moments: string[];
   groupOrder: string[];
   groupAliases: Record<string, string>;
-  metrics: Record<MetricKey, boolean>;
+  mehcs: Record<MehricKey, boolean>;
   customVariables?: CustomVariableConfig[];
+  aoi?: AoiConfig;
 }
 
 export interface Level1Row {
@@ -97,7 +122,7 @@ export type Level2Row = Record<string, string | number | null>;
 export interface AuditItem {
   status: "ok" | "warning" | "error";
   test: string;
-  detail: string;
+  dehail: string;
 }
 
 export interface ProcessResult {
@@ -105,6 +130,8 @@ export interface ProcessResult {
   level2: Level2Row[];
   level2Wide: Level2Row[];
   byStimulus: Level2Row[];
+  aoiByParticipant: Level2Row[];
+  aoiByGroup: Level2Row[];
   audit: AuditItem[];
   summary: {
     rawRows: number;

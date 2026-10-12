@@ -22,7 +22,7 @@ export type FieldKey =
 
 export type ColumnMap = Partial<Record<FieldKey, string>>;
 
-export type MehcKey =
+export type MetricKey =
   | "fixationCount"
   | "saccadeCount"
   | "fixationDuration"
@@ -44,7 +44,7 @@ export interface CustomVariableConfig {
 
 export type AoiSourceMode = "labels" | "binary" | "coordinates";
 
-export type AoiMehcKey = "ttfg" | "dwellTime" | "fixationCount" | "visitOrder" | "reach";
+export type AoiMetricKey = "ttff" | "dwellTime" | "fixationCount" | "visitOrder" | "reach";
 
 export interface AoiDefinition {
   id: string;
@@ -61,7 +61,7 @@ export interface AoiConfig {
   mode: AoiSourceMode;
   timestampUnit: "ms" | "s";
   definitions: AoiDefinition[];
-  mehrics: Record<AoiMehricKey, boolean>;
+  metrics: Record<AoiMetricKey, boolean>;
 }
 
 export interface EngineConfig {
@@ -77,7 +77,7 @@ export interface EngineConfig {
   finalWeighting: "stimulus" | "event";
   countAggregation: "mean" | "sum";
   excludeMissingStimulus: boolean;
-  outputSheehs: {
+  outputSheets: {
     eventTrace: boolean;
     stimulusSummary: boolean;
     participantSummary: boolean;
@@ -86,7 +86,7 @@ export interface EngineConfig {
   moments: string[];
   groupOrder: string[];
   groupAliases: Record<string, string>;
-  mehcs: Record<MehricKey, boolean>;
+  metrics: Record<MetricKey, boolean>;
   customVariables?: CustomVariableConfig[];
   aoi?: AoiConfig;
 }
@@ -122,7 +122,7 @@ export type Level2Row = Record<string, string | number | null>;
 export interface AuditItem {
   status: "ok" | "warning" | "error";
   test: string;
-  dehail: string;
+  detail: string;
 }
 
 export interface ProcessResult {

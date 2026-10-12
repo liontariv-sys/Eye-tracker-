@@ -131,3 +131,29 @@ test("ignora eventos sem estímulo quando configurado", () => {
   assert.equal(result.level1.length, 1);
   assert.equal(result.summary.excludedMissingStimulusRows, 1);
 });
+
+test("calcula métricas de AOI e o alcance entre participantes", () => {
+  const aoiConfig = {
+    ...config,
+    mapping: { ...config.mapping, timestamp: "timestamp" },
+    aoi: {
+      enabled: true,
+      mode: "labels",
+      timestampUnit: "ms",
+      definitions: [],
+      metrics: { ttff: true, dwellTime: true, fixationCount: true, visitOrder: true, reach: true },
+    },
+  };
+  const rows = [
+    { p: "P1", g: "controle", m: "pre", media: "A", event: "Fixation", fix: 1, duration: 0.1, timestamp: 0, __oculab_aoi_names: [] },
+    { p: "P1", g: "controle", m: "pre", media: "A", event: "Fixation", fix: 2, duration: 0.3, timestamp: 200, __oculab_aoi_names: ["Botão"] },
+    { p: "P2", g: "controle", m: "pre", media: "A", event: "Fixation", fix: 1, duration: 0.2, timestamp: 0, __oculab_aoi_names: [] },
+  ];
+  const result = processEyeData(rows, aoiConfig);
+  assert.equal(result.aoiByParticipant.length, 2);
+  assert.equal(result.aoiByParticipant[0].TTFF, 200);
+  assert.equal(result.aoiByParticipant[0].Tempo_Total_Permanencia, 300);
+  assert.equal(result.aoiByParticipant[0].N_Fixacoes_AOI, 1);
+  assert.equal(result.aoiByParticipant[1].Atingiu_AOI, 0);
+  assert.equal(result.aoiByGroup[0].Alcance_Percentual, 50);
+});

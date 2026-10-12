@@ -24,6 +24,7 @@ type Event = {
   timestamp: number | null;
   gazeX: number | null;
   gazeY: number | null;
+  gazeSamples: Array<{ x: number; y: number }>;
   startRow: number;
   endRow: number;
   duration: number | null;
@@ -141,6 +142,11 @@ function collapseEvents(rows: RawRow[], config: EngineConfig) {
       timestamp: active.timestamps.find((value) => value !== null) ?? null,
       gazeX: round(mean(active.gazeXs)),
       gazeY: round(mean(active.gazeYs)),
+      gazeSamples: active.gazeXs.flatMap((x, sampleIndex) => {
+        const y = active!.gazeYs[sampleIndex];
+        if (x === null || y === null || !Number.isFinite(x) || !Number.isFinite(y) || x < 0 || y < 0) return [];
+        return [{ x: round(x)!, y: round(y)! }];
+      }),
       startRow: Math.min(...active.rows),
       endRow: Math.max(...active.rows),
       duration: round(convertDuration(firstDuration, config)),
@@ -642,9 +648,10 @@ function makeAoiSummaries(events: Event[], config: EngineConfig) {
 
 function makeHeatmapPoints(events: Event[]): HeatmapPoint[] {
   return events.flatMap((event) => {
-    if (event.kind !== "fixation" || event.gazeX === null || event.gazeY === null) return [];
-    if (!Number.isFinite(event.gazeX) || !Number.isFinite(event.gazeY) || event.gazeX < 0 || event.gazeY < 0) return [];
-    return [{
+    if (event.kind !== "fixation" || !event.gazeSamples.length) return [];
+    const totalWeight = event.duration !== null && event.duration > 0 ? event.duration : event.gazeSamples.length;
+    const sampleWeight = totalWeight / event.gazeSamples.length;
+    return event.gazeSamples.map((sample) => ({
       Arquivo: event.sourceFile,
       Participante: event.participant,
       Grupo: event.group,
@@ -652,10 +659,10 @@ function makeHeatmapPoints(events: Event[]): HeatmapPoint[] {
       Estimulo: event.stimulus,
       Tentativa: event.trial,
       Fixacao_ID: event.id,
-      X: event.gazeX,
-      Y: event.gazeY,
-      Peso: event.duration !== null && event.duration > 0 ? event.duration : 1,
-    }];
+      X: sample.x,
+      Y: sample.y,
+      Peso: round(sampleWeight) ?? 1,
+    }));
   });
 }
 

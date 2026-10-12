@@ -18,6 +18,9 @@ type Event = {
   stimulus: string;
   trial: string;
   aoi: string;
+  aoiShares: Record<string, number>;
+  aoiEntryTimestamps: Record<string, number>;
+  timestamp: number | null;
   startRow: number;
   endRow: number;
   duration: number | null;
@@ -96,6 +99,8 @@ function collapseEvents(rows: RawRow[], config: EngineConfig) {
     stimulus: string;
     trial: string;
     aoi: string;
+    aoiSamples: string[][];
+    timestamps: Array<number | null>;
     rows: number[];
     durations: Array<number | null>;
     amplitudes: Array<number | null>;
@@ -109,6 +114,14 @@ function collapseEvents(rows: RawRow[], config: EngineConfig) {
   const flush = () => {
     if (!active) return;
     const firstDuration = active.durations.find((v) => v !== null) ?? null;
+    const aoiCounts = new Map<string, number>();
+    const aoiEntryTimestamps = new Map<string, number>();
+    active.aoiSamples.forEach((names, sampleIndex) => names.forEach((name) => {
+      aoiCounts.set(name, (aoiCounts.get(name) ?? 0) + 1);
+      const sampleTimestamp = active!.timestamps[sampleIndex];
+      if (sampleTimestamp !== null) aoiEntryTimestamps.set(name, Math.min(aoiEntryTimestamps.get(name) ?? sampleTimestamp, sampleTimestamp));
+    }));
+    const aoiShares = Object.fromEntries([...aoiCounts].map(([name, count]) => [name, active!.aoiSamples.length ? count / active!.aoiSamples.length : 0]));
     events.push({
       kind: active.kind,
       id: active.id,
@@ -118,6 +131,9 @@ function collapseEvents(rows: RawRow[], config: EngineConfig) {
       stimulus: active.stimulus,
       trial: active.trial,
       aoi: active.aoi,
+      aoiShares,
+      aoiEntryTimestamps: Object.fromEntries(aoiEntryTimestamps),
+      timestamp: active.timestamps.find((value) => value !== null) ?? null,
       startRow: Math.min(...active.rows),
       endRow: Math.max(...active.rows),
       duration: round(convertDuration(firstDuration, config)),
@@ -160,6 +176,9 @@ function collapseEvents(rows: RawRow[], config: EngineConfig) {
     const stimulus = text(mapped(row, config, "stimulus")) || "Estímulo não informado";
     const trial = text(mapped(row, config, "trial"));
     const aoi = text(mapped(row, config, "aoi"));
+    const normalizedAois = Array.isArray(row.__oculab_aoi_names)
+      ? row.__oculab_aoi_names.map((value) => text(value)).filter(Boolean)
+      : (aoi ? [aoi] : []);
     const sourceFile = text(mapped(row, config, "sourceFile"));
     const sourceOrder = numberValue(mapped(row, config, "sourceOrder")) ?? 1;
     const rawId = text(mapped(row, config, kind === "fixation" ? "fixationId" : "saccadeId"));
@@ -179,6 +198,8 @@ function collapseEvents(rows: RawRow[], config: EngineConfig) {
         stimulus,
         trial,
         aoi,
+        aoiSamples: [],
+        timestamps: [],
         rows: [],
         durations: [],
         amplitudes: [],
@@ -199,6 +220,8 @@ function collapseEvents(rows: RawRow[], config: EngineConfig) {
       return value;
     };
     active!.rows.push(index + 2);
+    active!.aoiSamples.push(normalizedAois);
+    active!.timestamps.push(numberValue(mapped(row, config, "timestamp")));
     active!.durations.push(numberValue(mapped(row, config, "duration")));
     active!.amplitudes.push(numberValue(mapped(row, config, "amplitude")));
     active!.pupilsLeft.push(cleanPupil("pupilLeft"));
@@ -356,244 +379,4 @@ const aggregateStimulusSummaries = (rows: Level2Row[], config: EngineConfig): Le
   for (const key of ["Duracao_Fixacao", "Duracao_Sacada", "Amplitude_Sacadica", "Pupila_Esquerda", "Pupila_Direita", "Pupila_Binocular"]) {
     const values = valid(`${key}_Media`);
     base[`${key}_Media`] = round(mean(values));
-    base[`${key}_DP`] = round(sd(values));
-  }
-  for (const variable of config.customVariables ?? []) {
-    for (const scope of customOutputScopes(variable.eventKind)) {
-      const outputScope = variable.eventKind === "both" ? scope : undefined;
-      const values = valid(customSummaryKey(variable.id, outputScope));
-      const aggregation = variable.aggregation === "count" ? "sum" : variable.aggregation;
-      base[customSummaryKey(variable.id, outputScope)] = round(summarize(values, aggregation));
-      base[customSdKey(variable.id, outputScope)] = round(sd(values));
-    }
-  }
-  return base;
-};
-
-const emptySummaryRow = (participant: string, group: string, moment: string, config: EngineConfig): Level2Row => {
-  const row: Level2Row = {
-    Participante: participant,
-    Grupo: group,
-    Momento: moment,
-    N_Fixacoes: null,
-    N_Sacadas: null,
-    N_Sacadas_Emparelhadas: null,
-    Duracao_Fixacao_Media: null,
-    Duracao_Fixacao_DP: null,
-    Duracao_Sacada_Media: null,
-    Duracao_Sacada_DP: null,
-    Amplitude_Sacadica_Media: null,
-    Amplitude_Sacadica_DP: null,
-    Pupila_Esquerda_Media: null,
-    Pupila_Esquerda_DP: null,
-    Pupila_Direita_Media: null,
-    Pupila_Direita_DP: null,
-    Pupila_Binocular_Media: null,
-    Pupila_Binocular_DP: null,
-  };
-  for (const variable of config.customVariables ?? []) {
-    for (const scope of customOutputScopes(variable.eventKind)) {
-      const outputScope = variable.eventKind === "both" ? scope : undefined;
-      row[customSummaryKey(variable.id, outputScope)] = null;
-      row[customSdKey(variable.id, outputScope)] = null;
-    }
-  }
-  return row;
-};
-
-function makeLevel2(level1: Level1Row[], config: EngineConfig, includeStimulus: boolean) {
-  if (includeStimulus) {
-    const buckets = new Map<string, Level1Row[]>();
-    for (const row of level1) {
-      const key = [row.Ordem_Arquivo, row.Arquivo, row.Participante, row.Grupo, row.Momento, row.Estimulo].join("\u241f");
-      buckets.set(key, [...(buckets.get(key) ?? []), row]);
-    }
-    return [...buckets.values()]
-      .map((bucket) => aggregate(bucket, true, config))
-      .sort((a, b) => Number(a.Ordem_Arquivo ?? 1) - Number(b.Ordem_Arquivo ?? 1)
-        || String(a.Participante ?? "").localeCompare(String(b.Participante ?? ""), undefined, { numeric: true })
-        || String(a.Momento ?? "").localeCompare(String(b.Momento ?? ""))
-        || String(a.Estimulo ?? "").localeCompare(String(b.Estimulo ?? ""), undefined, { numeric: true }));
-  }
-  const participants = new Map<string, { group: string; order: number }>();
-  for (const row of level1) {
-    const current = participants.get(row.Participante);
-    if (!current || row.Ordem_Arquivo < current.order) participants.set(row.Participante, { group: row.Grupo, order: row.Ordem_Arquivo });
-  }
-  const observedMoments = Array.from(new Set(level1.map((row) => row.Momento)));
-  const moments = config.studyDesign === "longitudinal" && config.moments.length
-    ? config.moments
-    : observedMoments;
-  const orderedParticipants = [...participants].sort((a, b) =>
-    a[1].order - b[1].order || a[0].localeCompare(b[0], undefined, { numeric: true }),
-  );
-  const result: Level2Row[] = [];
-  for (const [participant, info] of orderedParticipants) {
-    const group = info.group;
-    for (const moment of moments) {
-      const matches = level1.filter((row) => row.Participante === participant && row.Momento === moment);
-      if (matches.length) result.push(aggregate(matches, false, config));
-      else if (config.studyDesign === "longitudinal") result.push(emptySummaryRow(participant, group, moment, config));
-    }
-  }
-  return result;
-}
-
-function makeParticipantSummary(level1: Level1Row[], byStimulus: Level2Row[], config: EngineConfig) {
-  if (config.finalWeighting === "event") return makeLevel2(level1, config, false);
-  const participants = new Map<string, { group: string; order: number }>();
-  for (const row of level1) {
-    const current = participants.get(row.Participante);
-    if (!current || row.Ordem_Arquivo < current.order) participants.set(row.Participante, { group: row.Grupo, order: row.Ordem_Arquivo });
-  }
-  const observedMoments = Array.from(new Set(level1.map((row) => row.Momento)));
-  const moments = config.studyDesign === "longitudinal" && config.moments.length ? config.moments : observedMoments;
-  const orderedParticipants = [...participants].sort((a, b) =>
-    a[1].order - b[1].order || a[0].localeCompare(b[0], undefined, { numeric: true }),
-  );
-  const result: Level2Row[] = [];
-  for (const [participant, info] of orderedParticipants) {
-    const group = info.group;
-    for (const moment of moments) {
-      const matches = byStimulus.filter((row) => row.Participante === participant && row.Momento === moment && typeof row.N_Fixacoes === "number");
-      if (matches.length) result.push(aggregateStimulusSummaries(matches, config));
-      else if (config.studyDesign === "longitudinal") result.push({ ...emptySummaryRow(participant, group, moment, config), N_Estimulos: null, N_Fixacoes_DP: null, N_Sacadas_DP: null, N_Sacadas_Emparelhadas_DP: null });
-    }
-  }
-  return result;
-}
-
-function toWide(rows: Level2Row[], config: EngineConfig) {
-  const idColumns = ["Participante", "Grupo"];
-  const metricColumns = Array.from(new Set(rows.flatMap((row) => Object.keys(row)).filter((key) => ![...idColumns, "Momento", "Estimulo"].includes(key))));
-  const stimuli = Array.from(new Set(rows.map((row) => row.Estimulo).filter((value): value is string => typeof value === "string" && Boolean(value))));
-  const buckets = new Map<string, Level2Row>();
-  for (const row of rows) {
-    const participant = String(row.Participante ?? "");
-    const group = String(row.Grupo ?? "");
-    const key = `${participant}\u241f${group}`;
-    const output = buckets.get(key) ?? { Participante: participant, Grupo: group };
-    const moment = String(row.Momento ?? "Momento").replace(/\s+/g, "_");
-    const stimulus = row.Estimulo ? `_${String(row.Estimulo).replace(/\s+/g, "_")}` : "";
-    for (const metric of metricColumns) output[`${metric}_${moment}${stimulus}`] = row[metric] ?? null;
-    buckets.set(key, output);
-  }
-  void stimuli;
-  void config;
-  return [...buckets.values()];
-}
-
-function filterMetrics<T extends Record<string, unknown>>(rows: T[], config: EngineConfig): T[] {
-  const contextEnabled = (field: keyof NonNullable<EngineConfig["contextFields"]>, mappedField: keyof EngineConfig["mapping"]) =>
-    config.contextFields?.[field] ?? Boolean(config.mapping[mappedField]);
-  const allowed = (key: string) => {
-    if (key === "Participante") return contextEnabled("participant", "participant");
-    if (key === "Grupo") return contextEnabled("group", "group");
-    if (key === "Momento") return contextEnabled("moment", "moment");
-    if (key === "Estimulo") return contextEnabled("stimulus", "stimulus");
-    if (key === "Tentativa") return contextEnabled("trial", "trial");
-    if (key === "AOI") return contextEnabled("aoi", "aoi");
-    if (key === "Arquivo" || key === "Ordem_Arquivo") return contextEnabled("sourceFile", "sourceFile");
-    if (["Fixacao_ID", "Sacada_ID", "Linha_Inicial_Fixacao", "Linha_Inicial_Sacada", "N_Estimulos"].includes(key)) return true;
-    if (key.startsWith("N_Fixacoes")) return config.metrics.fixationCount;
-    if (key.startsWith("N_Sacadas_Emparelhadas")) return false;
-    if (key.startsWith("N_Sacadas")) return config.metrics.saccadeCount;
-    if (key.startsWith("Duracao_Fixacao")) return config.metrics.fixationDuration;
-    if (key.startsWith("Duracao_Sacada")) return config.metrics.saccadeDuration;
-    if (key.startsWith("Amplitude_Sacadica")) return config.metrics.saccadicAmplitude;
-    if (key.startsWith("Pupila_Esquerda")) return config.metrics.pupilLeft;
-    if (key.startsWith("Pupila_Direita")) return config.metrics.pupilRight;
-    if (key.startsWith("Pupila_Binocular")) return config.metrics.pupilBinocular;
-    if ((config.customVariables ?? []).some((variable) => key.startsWith(customEventKey(variable.id)))) return true;
-    return false;
-  };
-  return rows.map((row) => Object.fromEntries(Object.entries(row).filter(([key]) => allowed(key))) as T);
-}
-
-export function processEyeData(rows: RawRow[], config: EngineConfig): ProcessResult {
-  if (!config.mapping.eventType) throw new Error("Mapeie a coluna de tipo do evento.");
-  const normalizedConfig: EngineConfig = {
-    ...config,
-    amplitudeSource: config.amplitudeSource ?? "auto",
-    finalWeighting: config.finalWeighting ?? "stimulus",
-    countAggregation: config.countAggregation ?? "mean",
-    excludeMissingStimulus: config.excludeMissingStimulus ?? true,
-    outputSheets: config.outputSheets ?? { eventTrace: true, stimulusSummary: true, participantSummary: true, analysisMatrix: true },
-  };
-  const { events, invalidPupilValues, excludedMissingStimulusRows } = collapseEvents(rows, normalizedConfig);
-  const resolvedAmplitudeSource = resolveAmplitudeSource(events, normalizedConfig.amplitudeSource);
-  const level1Full = level1FromEvents(events, resolvedAmplitudeSource, normalizedConfig.customVariables);
-  const byStimulusFull = makeLevel2(level1Full, config, true);
-  const level2Full = makeParticipantSummary(level1Full, byStimulusFull, normalizedConfig);
-  const level2WideFull = toWide(level2Full, config);
-  const fixationEvents = events.filter((event) => event.kind === "fixation").length;
-  const saccadeEvents = events.filter((event) => event.kind === "saccade").length;
-  const pairedEvents = level1Full.filter((row) => row.Sacada_Emparelhada).length;
-  const participants = new Set(level1Full.map((row) => row.Participante)).size;
-  const sourceFiles = new Set(rows.map((row) => text(mapped(row, normalizedConfig, "sourceOrder")) || text(mapped(row, normalizedConfig, "sourceFile"))).filter(Boolean)).size || (rows.length ? 1 : 0);
-  const moments = config.studyDesign === "longitudinal" && config.moments.length ? config.moments.length : new Set(level1Full.map((row) => row.Momento)).size;
-  const expectedLongitudinalRows = participants * moments;
-  const representedFixations = level1Full
-    .filter((row) => row.Fixacao_ID)
-    .map((row) => [row.Ordem_Arquivo, row.Arquivo, row.Participante, row.Momento, row.Estimulo, row.Tentativa, row.Fixacao_ID, row.Linha_Inicial_Fixacao].join("\u241f"));
-  const representedSaccades = level1Full
-    .filter((row) => row.Sacada_ID)
-    .map((row) => [row.Ordem_Arquivo, row.Arquivo, row.Participante, row.Momento, row.Estimulo, row.Tentativa, row.Sacada_ID, row.Linha_Inicial_Sacada].join("\u241f"));
-  const pairedSaccades = level1Full
-    .filter((row) => row.Sacada_Emparelhada && row.Sacada_ID)
-    .map((row) => [row.Ordem_Arquivo, row.Arquivo, row.Participante, row.Momento, row.Estimulo, row.Tentativa, row.Sacada_ID, row.Linha_Inicial_Sacada].join("\u241f"));
-  const audit: AuditItem[] = [
-    {
-      status: "ok",
-      test: "Arquivos do lote consolidados",
-      detail: `${sourceFiles} ${sourceFiles === 1 ? "arquivo foi processado" : "arquivos foram processados"} na ordem definida pelo pesquisador.`,
-    },
-    {
-      status: fixationEvents <= rows.length && saccadeEvents <= rows.length ? "ok" : "error",
-      test: "Eventos não extrapolam o arquivo bruto",
-      detail: `${fixationEvents} fixações e ${saccadeEvents} sacadas identificadas em ${rows.length} linhas brutas.`,
-    },
-    {
-      status: representedFixations.length === fixationEvents && representedSaccades.length === saccadeEvents ? "ok" : "error",
-      test: "Fixações e sacadas válidas preservadas",
-      detail: `${fixationEvents} fixações e ${saccadeEvents} sacadas foram mantidas no rastreio. Eventos pareados compartilham a mesma linha.`,
-    },
-    {
-      status: new Set(representedSaccades).size === representedSaccades.length && new Set(pairedSaccades).size === pairedSaccades.length ? "ok" : "error",
-      test: "Sacadas registradas uma única vez",
-      detail: `${pairedEvents} pares fixação → sacada imediata e ${saccadeEvents - pairedEvents} sacadas sem pareamento, todas preservadas sem duplicação.`,
-    },
-    {
-      status: config.studyDesign === "cross-sectional" || level2Full.length === expectedLongitudinalRows ? "ok" : "error",
-      test: config.studyDesign === "longitudinal" ? "Matriz longitudinal completa" : "Estrutura transversal preservada",
-      detail: config.studyDesign === "longitudinal" ? `${participants} participantes × ${moments} momentos = ${expectedLongitudinalRows} linhas.` : `${level2Full.length} combinações observadas foram mantidas.`,
-    },
-    {
-      status: invalidPupilValues ? "warning" : "ok",
-      test: "Sanitização pupilar",
-      detail: invalidPupilValues
-        ? `${invalidPupilValues} ${invalidPupilValues === 1 ? "valor foi convertido" : "valores foram convertidos"} em ausente${invalidPupilValues === 1 ? "" : "s"} antes das médias.`
-        : "Nenhum valor pupilar ≤ 0 foi encontrado.",
-    },
-    {
-      status: "ok",
-      test: "Origem da amplitude sacádica",
-      detail: `Amplitude lida dos eventos de ${resolvedAmplitudeSource === "fixation" ? "fixação" : "sacada"}${normalizedConfig.amplitudeSource === "auto" ? " (detecção automática)" : " (definição manual)"}.`,
-    },
-    {
-      status: excludedMissingStimulusRows ? "warning" : "ok",
-      test: "Eventos sem estímulo",
-      detail: excludedMissingStimulusRows
-        ? `${excludedMissingStimulusRows} linhas de fixação/sacada sem estímulo foram ignoradas conforme a configuração.`
-        : "Nenhuma linha elegível sem estímulo precisou ser ignorada.",
-    },
-  ];
-  return {
-    level1: filterMetrics(level1Full as unknown as Record<string, unknown>[], config) as unknown as Level1Row[],
-    level2: filterMetrics(level2Full, config),
-    level2Wide: filterMetrics(level2WideFull, config),
-    byStimulus: filterMetrics(byStimulusFull, config),
-    audit,
-    summary: { rawRows: rows.length, fixationEvents, saccadeEvents, pairedEvents, invalidPupilValues, participants, expectedLongitudinalRows, excludedMissingStimulusRows, resolvedAmplitudeSource, sourceFiles },
-  };
-}
+    base[`${key}_DP`] = round(sd(vh)

@@ -24,7 +24,7 @@ export default function AccessAdmin({ initialRequests }: { initialRequests: Requ
     window.location.assign("/");
   };
   return <main className="admin-page"><section className="admin-shell">
-    <header className="admin-header"><div><div className="admin-brand"><Image src="/brand/lpnec-logo-transparent.png" alt="LPNeC" width={72} height={45} /><Link href="/"><ArrowLeft /> Voltar ao Oculab</Link></div><h1>Solicitações de acesso</h1><p>Aprove ou negue os pedidos feitos pelo formulário de entrada.</p></div><div className="admin-header-actions"><span><ShieldCheck /> {requests.filter((item) => item.status === "approved").length} autorizados</span><button type="button" onClick={signOut}><LogOut /> Sair</button></div></header>
+    <header className="admin-header"><div><div className="admin-brand"><Image src="/brand/lpnec-logo-transparent.png" alt="LPNeC" width={72} height={45} priority unoptimized /><Link href="/"><ArrowLeft /> Voltar ao Oculab</Link></div><h1>Solicitações de acesso</h1><p>Aprove ou negue os pedidos feitos pelo formulário de entrada.</p></div><div className="admin-header-actions"><span><ShieldCheck /> {requests.filter((item) => item.status === "approved").length} autorizados</span><button type="button" onClick={signOut}><LogOut /> Sair</button></div></header>
     <div className="admin-list">
       {!requests.length && <div className="admin-empty"><Mail /><strong>Nenhuma solicitação recebida</strong><span>Os novos pedidos aparecerão aqui.</span></div>}
       {requests.map((item) => <article className="admin-request" key={item.id}>

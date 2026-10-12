@@ -172,8 +172,8 @@ function DataTable({ rows, limit = 40, headerLabel }: { rows: Record<string, unk
   );
 }
 
-function HeatmapCanvas({ imageSrc, imageWidth, imageHeight, points, definitions }: {
-  imageSrc: string;
+function HeatmapCanvas({ imageSrc = "", imageWidth, imageHeight, points, definitions }: {
+  imageSrc?: string;
   imageWidth: number;
   imageHeight: number;
   points: HeatmapPoint[];
@@ -183,82 +183,131 @@ function HeatmapCanvas({ imageSrc, imageWidth, imageHeight, points, definitions 
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !imageSrc || !imageWidth || !imageHeight) return;
+    if (!canvas || !imageWidth || !imageHeight) return;
     const context = canvas.getContext("2d");
     if (!context) return;
-    const image = new Image();
-    image.onload = () => {
+    let cancelled = false;
+
+    const render = (image?: HTMLImageElement) => {
+      if (cancelled) return;
       canvas.width = imageWidth;
       canvas.height = imageHeight;
       context.clearRect(0, 0, imageWidth, imageHeight);
-      context.drawImage(image, 0, 0, imageWidth, imageHeight);
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, imageWidth, imageHeight);
+
+      if (image) {
+        context.drawImage(image, 0, 0, imageWidth, imageHeight);
+      } else {
+        context.save();
+        context.strokeStyle = "rgba(12, 91, 94, .08)";
+        context.lineWidth = 1;
+        const spacing = Math.max(40, Math.round(Math.max(imageWidth, imageHeight) / 16));
+        for (let x = spacing; x < imageWidth; x += spacing) {
+          context.beginPath();
+          context.moveTo(x, 0);
+          context.lineTo(x, imageHeight);
+          context.stroke();
+        }
+        for (let y = spacing; y < imageHeight; y += spacing) {
+          context.beginPath();
+          context.moveTo(0, y);
+          context.lineTo(imageWidth, y);
+          context.stroke();
+        }
+        context.restore();
+      }
+
+      const normalizedPoints = points.length > 0 && points.every((point) =>
+        point.X >= 0 && point.X <= 1 && point.Y >= 0 && point.Y <= 1);
+      const displayPoints = points.map((point) => ({
+        ...point,
+        X: normalizedPoints ? point.X * imageWidth : point.X,
+        Y: normalizedPoints ? point.Y * imageHeight : point.Y,
+      }));
 
       const density = document.createElement("canvas");
       density.width = imageWidth;
       density.height = imageHeight;
       const densityContext = density.getContext("2d");
-      if (!densityContext || !points.length) return;
-      const maxWeight = Math.max(...points.map((point) => point.Peso), 1);
-      const radius = Math.max(34, Math.min(115, Math.max(imageWidth, imageHeight) * 0.075));
-      densityContext.globalCompositeOperation = "lighter";
-      for (const point of points) {
-        if (point.X < 0 || point.Y < 0 || point.X > imageWidth || point.Y > imageHeight) continue;
-        const strength = 0.18 + 0.62 * Math.sqrt(point.Peso / maxWeight);
-        const gradient = densityContext.createRadialGradient(point.X, point.Y, 0, point.X, point.Y, radius);
-        gradient.addColorStop(0, `rgba(0,0,0,${strength})`);
-        gradient.addColorStop(0.45, `rgba(0,0,0,${strength * 0.55})`);
-        gradient.addColorStop(1, "rgba(0,0,0,0)");
-        densityContext.fillStyle = gradient;
-        densityContext.fillRect(point.X - radius, point.Y - radius, radius * 2, radius * 2);
-      }
-      const pixels = densityContext.getImageData(0, 0, imageWidth, imageHeight);
-      const palette = (value: number) => {
-        const stops = [[20, 92, 197], [0, 196, 190], [75, 208, 95], [255, 221, 64], [244, 58, 48]];
-        const position = Math.min(0.999, Math.max(0, value)) * (stops.length - 1);
-        const index = Math.floor(position);
-        const mix = position - index;
-        const left = stops[index];
-        const right = stops[Math.min(index + 1, stops.length - 1)];
-        return left.map((channel, channelIndex) => Math.round(channel + (right[channelIndex] - channel) * mix));
-      };
-      for (let index = 0; index < pixels.data.length; index += 4) {
-        const intensity = pixels.data[index + 3] / 255;
-        if (intensity <= 0.025) {
-          pixels.data[index + 3] = 0;
-          continue;
+      if (densityContext && displayPoints.length) {
+        const maxWeight = Math.max(...displayPoints.map((point) => point.Peso), 1);
+        const radius = Math.max(34, Math.min(115, Math.max(imageWidth, imageHeight) * 0.075));
+        densityContext.globalCompositeOperation = "lighter";
+        for (const point of displayPoints) {
+          if (point.X < 0 || point.Y < 0 || point.X > imageWidth || point.Y > imageHeight) continue;
+          const strength = 0.14 + 0.58 * Math.sqrt(point.Peso / maxWeight);
+          const gradient = densityContext.createRadialGradient(point.X, point.Y, 0, point.X, point.Y, radius);
+          gradient.addColorStop(0, `rgba(0,0,0,${strength})`);
+          gradient.addColorStop(0.45, `rgba(0,0,0,${strength * 0.55})`);
+          gradient.addColorStop(1, "rgba(0,0,0,0)");
+          densityContext.fillStyle = gradient;
+          densityContext.fillRect(point.X - radius, point.Y - radius, radius * 2, radius * 2);
         }
-        const [red, green, blue] = palette(Math.min(1, intensity * 1.35));
-        pixels.data[index] = red;
-        pixels.data[index + 1] = green;
-        pixels.data[index + 2] = blue;
-        pixels.data[index + 3] = Math.round(Math.min(0.78, 0.2 + intensity * 0.7) * 255);
+        const pixels = densityContext.getImageData(0, 0, imageWidth, imageHeight);
+        const palette = (value: number) => {
+          const stops = [[20, 92, 197], [0, 196, 190], [75, 208, 95], [255, 221, 64], [244, 58, 48]];
+          const position = Math.min(0.999, Math.max(0, value)) * (stops.length - 1);
+          const index = Math.floor(position);
+          const mix = position - index;
+          const left = stops[index];
+          const right = stops[Math.min(index + 1, stops.length - 1)];
+          return left.map((channel, channelIndex) => Math.round(channel + (right[channelIndex] - channel) * mix));
+        };
+        for (let index = 0; index < pixels.data.length; index += 4) {
+          const intensity = pixels.data[index + 3] / 255;
+          if (intensity <= 0.025) {
+            pixels.data[index + 3] = 0;
+            continue;
+          }
+          const [red, green, blue] = palette(Math.min(1, intensity * 1.35));
+          pixels.data[index] = red;
+          pixels.data[index + 1] = green;
+          pixels.data[index + 2] = blue;
+          pixels.data[index + 3] = Math.round(Math.min(0.78, 0.2 + intensity * 0.7) * 255);
+        }
+        densityContext.globalCompositeOperation = "source-over";
+        densityContext.putImageData(pixels, 0, 0);
+        context.drawImage(density, 0, 0);
       }
-      densityContext.globalCompositeOperation = "source-over";
-      densityContext.putImageData(pixels, 0, 0);
-      context.drawImage(density, 0, 0);
+
+      const boundedDefinitions = definitions.filter((definition) =>
+        [definition.xMin, definition.yMin, definition.xMax, definition.yMax].every((value) => value !== null));
+      const normalizedDefinitions = boundedDefinitions.length > 0 && boundedDefinitions.every((definition) =>
+        [definition.xMin, definition.yMin, definition.xMax, definition.yMax].every((value) => typeof value === "number" && value >= 0 && value <= 1));
 
       context.save();
       context.font = `${Math.max(14, Math.round(imageWidth / 70))}px sans-serif`;
       context.lineWidth = Math.max(2, imageWidth / 520);
-      definitions.forEach((definition) => {
-        if ([definition.xMin, definition.yMin, definition.xMax, definition.yMax].some((value) => value === null)) return;
-        const x = Math.min(definition.xMin!, definition.xMax!);
-        const y = Math.min(definition.yMin!, definition.yMax!);
-        const width = Math.abs(definition.xMax! - definition.xMin!);
-        const height = Math.abs(definition.yMax! - definition.yMin!);
-        context.strokeStyle = "rgba(255,255,255,.92)";
+      boundedDefinitions.forEach((definition) => {
+        const scaleX = (value: number) => normalizedDefinitions ? value * imageWidth : value;
+        const scaleY = (value: number) => normalizedDefinitions ? value * imageHeight : value;
+        const x = Math.min(scaleX(definition.xMin!), scaleX(definition.xMax!));
+        const y = Math.min(scaleY(definition.yMin!), scaleY(definition.yMax!));
+        const width = Math.abs(scaleX(definition.xMax!) - scaleX(definition.xMin!));
+        const height = Math.abs(scaleY(definition.yMax!) - scaleY(definition.yMin!));
+        context.strokeStyle = image ? "rgba(255,255,255,.94)" : "rgba(7,45,50,.78)";
         context.setLineDash([10, 7]);
         context.strokeRect(x, y, width, height);
         const label = definition.name || "AOI";
         const labelWidth = context.measureText(label).width + 18;
-        context.fillStyle = "rgba(7,45,50,.82)";
+        context.fillStyle = "rgba(7,45,50,.86)";
         context.fillRect(x, Math.max(0, y - 29), labelWidth, 26);
         context.fillStyle = "white";
         context.fillText(label, x + 9, Math.max(19, y - 10));
       });
       context.restore();
     };
-    image.src = imageSrc;
+
+    if (imageSrc) {
+      const image = new Image();
+      image.onload = () => render(image);
+      image.onerror = () => render();
+      image.src = imageSrc;
+    } else {
+      render();
+    }
+    return () => { cancelled = true; };
   }, [imageSrc, imageWidth, imageHeight, points, definitions]);
 
   const download = () => {
@@ -271,7 +320,7 @@ function HeatmapCanvas({ imageSrc, imageWidth, imageHeight, points, definitions 
   };
 
   return <div className="heatmap-figure">
-    <canvas ref={canvasRef} aria-label="Mapa de calor das fixações sobre o estímulo" />
+    <canvas ref={canvasRef} aria-label={imageSrc ? "Mapa de calor das fixações sobre o estímulo" : "Mapa de calor das fixações sobre fundo branco"} />
     <div className="heatmap-legend"><span>Menor densidade</span><i aria-hidden="true" /><span>Maior densidade</span><Button type="button" variant="outline" size="sm" onClick={download}><Download /> Baixar PNG</Button></div>
   </div>;
 }
@@ -494,7 +543,18 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
   const onAoiImage = (file?: File) => {
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => setAoiReferenceImage(typeof reader.result === "string" ? reader.result : "");
+    reader.onload = () => {
+      const source = typeof reader.result === "string" ? reader.result : "";
+      setAoiReferenceImage(source);
+      if (!source) return;
+      const image = new Image();
+      image.onload = () => {
+        const size = { width: image.naturalWidth, height: image.naturalHeight };
+        setAoiImageSize(size);
+        setAoiConfig((current) => ({ ...current, imageWidth: size.width, imageHeight: size.height }));
+      };
+      image.src = source;
+    };
     reader.readAsDataURL(file);
   };
 
@@ -732,6 +792,19 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
     && (heatmapGroup === "__all__" || point.Grupo === heatmapGroup)), [result, heatmapStimulus, heatmapParticipant, heatmapGroup]);
   const visibleHeatmapDefinitions = useMemo(() => aoiConfig.definitions.filter((definition) =>
     !definition.stimulus.trim() || heatmapStimulus === "__all__" || definition.stimulus === heatmapStimulus), [aoiConfig.definitions, heatmapStimulus]);
+  const filteredHeatmapFixationCount = useMemo(() => new Set(filteredHeatmapPoints.map((point) =>
+    [point.Arquivo, point.Participante, point.Momento, point.Estimulo, point.Tentativa, point.Fixacao_ID].join("␟"))).size, [filteredHeatmapPoints]);
+  const heatmapCanvasSize = useMemo(() => {
+    const definitionX = visibleHeatmapDefinitions.flatMap((definition) => [definition.xMin, definition.xMax]).filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+    const definitionY = visibleHeatmapDefinitions.flatMap((definition) => [definition.yMin, definition.yMax]).filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+    const maxX = Math.max(0, ...filteredHeatmapPoints.map((point) => point.X), ...definitionX);
+    const maxY = Math.max(0, ...filteredHeatmapPoints.map((point) => point.Y), ...definitionY);
+    const normalized = maxX > 0 && maxX <= 1 && maxY > 0 && maxY <= 1;
+    return {
+      width: aoiImageSize.width || aoiConfig.imageWidth || (normalized ? 1280 : Math.max(640, Math.ceil(maxX * 1.05))),
+      height: aoiImageSize.height || aoiConfig.imageHeight || (normalized ? 720 : Math.max(360, Math.ceil(maxY * 1.05))),
+    };
+  }, [aoiImageSize, aoiConfig.imageWidth, aoiConfig.imageHeight, filteredHeatmapPoints, visibleHeatmapDefinitions]);
 
   const colors = ["#159a91", "#59c777", "#ff7e5f", "#0c1d2a", "#66a8a2", "#9a6a60"];
 
@@ -1006,16 +1079,17 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
                 <div className="aoi-result-tables"><div><h3>Por participante</h3><DataTable rows={result.aoiByParticipant} headerLabel={friendlyHeader} /></div><div><h3>Por grupo</h3><DataTable rows={result.aoiByGroup} headerLabel={friendlyHeader} /></div></div>
               </div></TabsContent>}
               {aoiConfig.enabled && aoiConfig.mode === "coordinates" && <TabsContent value="heatmap"><div className="heatmap-panel">
-                <div className="tab-heading"><div><strong>Densidade das fixações sobre o estímulo</strong><span>As regiões mais quentes receberam mais atenção. Cada fixação é ponderada por sua duração, sem transformar sacadas em pontos de atenção.</span></div><Badge variant="outline">{filteredHeatmapPoints.length} fixações</Badge></div>
+                <div className="tab-heading"><div><strong>Distribuição completa das fixações</strong><span>O mapa usa todas as amostras válidas de fixação encontradas na tela. As AOIs aparecem apenas como contornos de referência e não filtram os pontos.</span></div><Badge variant="outline">{filteredHeatmapPoints.length} amostras · {filteredHeatmapFixationCount} fixações</Badge></div>
                 <div className="heatmap-controls">
                   <div><Label>Estímulo</Label><Select value={heatmapStimulus} onValueChange={setHeatmapStimulus}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="__all__">Todos os estímulos</SelectItem>{heatmapOptions.stimuli.map((value) => <SelectItem value={value} key={value}>{value}</SelectItem>)}</SelectContent></Select></div>
                   <div><Label>Participante</Label><Select value={heatmapParticipant} onValueChange={setHeatmapParticipant}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="__all__">Todos os participantes</SelectItem>{heatmapOptions.participants.map((value) => <SelectItem value={value} key={value}>{value}</SelectItem>)}</SelectContent></Select></div>
                   <div><Label>Grupo</Label><Select value={heatmapGroup} onValueChange={setHeatmapGroup}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="__all__">Todos os grupos</SelectItem>{heatmapOptions.groups.map((value) => <SelectItem value={value} key={value}>{value}</SelectItem>)}</SelectContent></Select></div>
                 </div>
-                {aoiReferenceImage && aoiImageSize.width && aoiImageSize.height && filteredHeatmapPoints.length
-                  ? <HeatmapCanvas imageSrc={aoiReferenceImage} imageWidth={aoiImageSize.width} imageHeight={aoiImageSize.height} points={filteredHeatmapPoints} definitions={visibleHeatmapDefinitions} />
-                  : <div className="empty-state">{!aoiReferenceImage ? "Adicione a imagem do estímulo na configuração de AOIs para gerar o mapa de calor." : "Nenhuma fixação com coordenadas válidas corresponde aos filtros selecionados."}</div>}
-                <div className="heatmap-method-note"><Focus /><div><strong>Mapa de calor não é trajetória do olhar.</strong><span>Esta visualização resume onde e por quanto tempo o participante fixou. A sequência temporal do percurso é chamada de scanpath e deve ser interpretada separadamente.</span></div></div>
+                <div className="heatmap-method-note"><UploadCloud /><div><strong>Imagem de fundo opcional</strong><span>{aoiReferenceImage ? "A imagem atual será usada apenas como referência visual. Você pode substituí-la sem refazer a tabulação." : "Sem imagem, o Oculab gera o mapa normalmente sobre um fundo branco nas dimensões das coordenadas."}</span><Button type="button" variant="outline" size="sm" onClick={() => aoiImageInput.current?.click()}>{aoiReferenceImage ? "Trocar imagem" : "Adicionar imagem"}</Button><input ref={aoiImageInput} type="file" accept="image/*" hidden onChange={(event) => onAoiImage(event.target.files?.[0])} /></div></div>
+                {filteredHeatmapPoints.length
+                  ? <HeatmapCanvas imageSrc={aoiReferenceImage} imageWidth={heatmapCanvasSize.width} imageHeight={heatmapCanvasSize.height} points={filteredHeatmapPoints} definitions={visibleHeatmapDefinitions} />
+                  : <div className="empty-state">Nenhuma amostra de fixação com coordenadas X e Y válidas corresponde aos filtros selecionados.</div>}
+                <div className="heatmap-method-note"><Focus /><div><strong>Mapa de calor e percurso do olhar são medidas diferentes.</strong><span>O calor resume onde houve fixação e por quanto tempo. As coordenadas de sacadas não são tratadas como atenção; a sequência temporal completa deve ser interpretada como scanpath.</span></div></div>
               </div></TabsContent>}
               <TabsContent value="chart">
                 <div className="chart-panel">

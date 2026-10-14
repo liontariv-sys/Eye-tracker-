@@ -648,10 +648,9 @@ function makeAoiSummaries(events: Event[], config: EngineConfig) {
 
 function makeHeatmapPoints(events: Event[]): HeatmapPoint[] {
   return events.flatMap((event) => {
-    if (event.kind !== "fixation" || !event.gazeSamples.length) return [];
-    const totalWeight = event.duration !== null && event.duration > 0 ? event.duration : event.gazeSamples.length;
-    const sampleWeight = totalWeight / event.gazeSamples.length;
-    return event.gazeSamples.map((sample) => ({
+    if (event.kind !== "fixation" || event.gazeX === null || event.gazeY === null) return [];
+    if (!Number.isFinite(event.gazeX) || !Number.isFinite(event.gazeY) || event.gazeX < 0 || event.gazeY < 0) return [];
+    return [{
       Arquivo: event.sourceFile,
       Participante: event.participant,
       Grupo: event.group,
@@ -659,10 +658,10 @@ function makeHeatmapPoints(events: Event[]): HeatmapPoint[] {
       Estimulo: event.stimulus,
       Tentativa: event.trial,
       Fixacao_ID: event.id,
-      X: sample.x,
-      Y: sample.y,
-      Peso: round(sampleWeight) ?? 1,
-    }));
+      X: event.gazeX,
+      Y: event.gazeY,
+      Peso: event.duration !== null && event.duration > 0 ? event.duration : 1,
+    }];
   });
 }
 

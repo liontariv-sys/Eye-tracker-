@@ -116,7 +116,7 @@ const defaultAoiConfig: AoiConfig = {
 };
 
 const aoiMetricFields: Array<{ key: AoiMetricKey; label: string; detail: string }> = [
-  { key: "ttff", label: "Tempo até a primeira fixação (TTFF)", detail: "Tempo entre o início do estímulo e a primeira fixação dentro da AOI." },
+  { key: "ttff", label: "Tempo até a primeira fixação (TTFF)", detail: "Usa a coluna de tempo quando ela existe. Sem timestamp, fica em branco e não impede as outras análises." },
   { key: "dwellTime", label: "Tempo total de permanência", detail: "Soma das durações de fixação dentro da AOI." },
   { key: "fixationCount", label: "Número de fixações", detail: "Quantidade de fixações que atingiram a AOI." },
   { key: "visitOrder", label: "Ordem da primeira visita", detail: "Indica qual AOI foi vista primeiro, segundo, terceiro e assim por diante." },
@@ -200,7 +200,7 @@ function HeatmapCanvas({ imageSrc = "", imageWidth, imageHeight, points, definit
         context.drawImage(image, 0, 0, imageWidth, imageHeight);
       } else {
         context.save();
-        context.strokeStyle = "rgba(12, 91, 94, .08)";
+        context.strokeStyle = "rgba(12, 91, 94, .075)";
         context.lineWidth = 1;
         const spacing = Math.max(40, Math.round(Math.max(imageWidth, imageHeight) / 16));
         for (let x = spacing; x < imageWidth; x += spacing) {
@@ -218,12 +218,19 @@ function HeatmapCanvas({ imageSrc = "", imageWidth, imageHeight, points, definit
         context.restore();
       }
 
-      const normalizedPoints = points.length > 0 && points.every((point) =>
-        point.X >= 0 && point.X <= 1 && point.Y >= 0 && point.Y <= 1);
-      const displayPoints = points.map((point) => ({
+      const validPoints = points.filter((point) =>
+        Number.isFinite(point.X) && Number.isFinite(point.Y) && point.X >= 0 && point.Y >= 0);
+      const normalizedPoints = validPoints.length > 0 && validPoints.every((point) =>
+        point.X <= 1 && point.Y <= 1);
+      const maxPointX = Math.max(0, ...validPoints.map((point) => point.X));
+      const maxPointY = Math.max(0, ...validPoints.map((point) => point.Y));
+      const needsFit = !normalizedPoints && (maxPointX > imageWidth || maxPointY > imageHeight);
+      const sourceWidth = needsFit ? Math.max(maxPointX * 1.02, 1) : imageWidth;
+      const sourceHeight = needsFit ? Math.max(maxPointY * 1.02, 1) : imageHeight;
+      const displayPoints = validPoints.map((point) => ({
         ...point,
-        X: normalizedPoints ? point.X * imageWidth : point.X,
-        Y: normalizedPoints ? point.Y * imageHeight : point.Y,
+        X: normalizedPoints ? point.X * imageWidth : needsFit ? point.X * imageWidth / sourceWidth : point.X,
+        Y: normalizedPoints ? point.Y * imageHeight : needsFit ? point.Y * imageHeight / sourceHeight : point.Y,
       }));
 
       const density = document.createElement("canvas");
@@ -231,22 +238,47 @@ function HeatmapCanvas({ imageSrc = "", imageWidth, imageHeight, points, definit
       density.height = imageHeight;
       const densityContext = density.getContext("2d");
       if (densityContext && displayPoints.length) {
-        const maxWeight = Math.max(...displayPoints.map((point) => point.Peso), 1);
-        const radius = Math.max(34, Math.min(115, Math.max(imageWidth, imageHeight) * 0.075));
+        const sortedWeights = displayPoints
+          .map((point) => Math.max(1, point.Peso))
+          .sort((a, b) => a - b);
+        const weightReference = sortedWeights[Math.floor((sortedWeights.length - 1) * 0.95)] ?? 1;
+        const radius = Math.max(22, Math.min(92, Math.min(imageWidth, imageHeight) * 0.06));
         densityContext.globalCompositeOperation = "lighter";
         for (const point of displayPoints) {
-          if (point.X < 0 || point.Y < 0 || point.X > imageWidth || point.Y > imageHeight) continue;
-          const strength = 0.14 + 0.58 * Math.sqrt(point.Peso / maxWeight);
+          const relativeWeight = Math.min(1, Math.max(0, point.Peso) / Math.max(1, weightReference));
+          const strength = 0.08 + 0.34 * Math.sqrt(relativeWeight);
           const gradient = densityContext.createRadialGradient(point.X, point.Y, 0, point.X, point.Y, radius);
           gradient.addColorStop(0, `rgba(0,0,0,${strength})`);
-          gradient.addColorStop(0.45, `rgba(0,0,0,${strength * 0.55})`);
+          gradient.addColorStop(0.36, `rgba(0,0,0,${strength * 0.72})`);
+          gradient.addColorStop(0.72, `rgba(0,0,0,${strength * 0.28})`);
           gradient.addColorStop(1, "rgba(0,0,0,0)");
           densityContext.fillStyle = gradient;
           densityContext.fillRect(point.X - radius, point.Y - radius, radius * 2, radius * 2);
         }
+
         const pixels = densityContext.getImageData(0, 0, imageWidth, imageHeight);
+        const histogram = new Uint32Array(256);
+        let nonZeroPixels = 0;
+        for (let index = 3; index < pixels.data.length; index += 4) {
+          const alpha = pixels.data[index];
+          if (alpha > 0) {
+            histogram[alpha] += 1;
+            nonZeroPixels += 1;
+          }
+        }
+        const percentileTarget = Math.max(1, Math.ceil(nonZeroPixels * 0.985));
+        let accumulated = 0;
+        let referenceAlpha = 255;
+        for (let alpha = 1; alpha < histogram.length; alpha += 1) {
+          accumulated += histogram[alpha];
+          if (accumulated >= percentileTarget) {
+            referenceAlpha = alpha;
+            break;
+          }
+        }
+
         const palette = (value: number) => {
-          const stops = [[20, 92, 197], [0, 196, 190], [75, 208, 95], [255, 221, 64], [244, 58, 48]];
+          const stops = [[20, 70, 170], [0, 164, 224], [0, 202, 187], [94, 211, 83], [255, 220, 55], [244, 58, 48]];
           const position = Math.min(0.999, Math.max(0, value)) * (stops.length - 1);
           const index = Math.floor(position);
           const mix = position - index;
@@ -254,21 +286,31 @@ function HeatmapCanvas({ imageSrc = "", imageWidth, imageHeight, points, definit
           const right = stops[Math.min(index + 1, stops.length - 1)];
           return left.map((channel, channelIndex) => Math.round(channel + (right[channelIndex] - channel) * mix));
         };
+
         for (let index = 0; index < pixels.data.length; index += 4) {
-          const intensity = pixels.data[index + 3] / 255;
-          if (intensity <= 0.025) {
-            pixels.data[index + 3] = 0;
-            continue;
-          }
-          const [red, green, blue] = palette(Math.min(1, intensity * 1.35));
+          const alpha = pixels.data[index + 3];
+          if (alpha === 0) continue;
+          const normalizedDensity = Math.min(1, alpha / Math.max(1, referenceAlpha));
+          const visibleDensity = Math.pow(normalizedDensity, 0.55);
+          const [red, green, blue] = palette(visibleDensity);
           pixels.data[index] = red;
           pixels.data[index + 1] = green;
           pixels.data[index + 2] = blue;
-          pixels.data[index + 3] = Math.round(Math.min(0.78, 0.2 + intensity * 0.7) * 255);
+          pixels.data[index + 3] = Math.round((0.3 + visibleDensity * 0.5) * 255);
         }
         densityContext.globalCompositeOperation = "source-over";
         densityContext.putImageData(pixels, 0, 0);
         context.drawImage(density, 0, 0);
+
+        context.save();
+        context.fillStyle = "rgba(8, 48, 112, .58)";
+        const markerRadius = Math.max(1.6, Math.min(3.2, Math.min(imageWidth, imageHeight) / 360));
+        for (const point of displayPoints) {
+          context.beginPath();
+          context.arc(point.X, point.Y, markerRadius, 0, Math.PI * 2);
+          context.fill();
+        }
+        context.restore();
       }
 
       const boundedDefinitions = definitions.filter((definition) =>
@@ -277,24 +319,34 @@ function HeatmapCanvas({ imageSrc = "", imageWidth, imageHeight, points, definit
         [definition.xMin, definition.yMin, definition.xMax, definition.yMax].every((value) => typeof value === "number" && value >= 0 && value <= 1));
 
       context.save();
-      context.font = `${Math.max(14, Math.round(imageWidth / 70))}px sans-serif`;
+      const fontSize = Math.max(13, Math.min(22, Math.round(imageWidth / 72)));
+      context.font = `700 ${fontSize}px sans-serif`;
+      context.textBaseline = "middle";
       context.lineWidth = Math.max(2, imageWidth / 520);
-      boundedDefinitions.forEach((definition) => {
+      boundedDefinitions.forEach((definition, definitionIndex) => {
         const scaleX = (value: number) => normalizedDefinitions ? value * imageWidth : value;
         const scaleY = (value: number) => normalizedDefinitions ? value * imageHeight : value;
         const x = Math.min(scaleX(definition.xMin!), scaleX(definition.xMax!));
         const y = Math.min(scaleY(definition.yMin!), scaleY(definition.yMax!));
         const width = Math.abs(scaleX(definition.xMax!) - scaleX(definition.xMin!));
         const height = Math.abs(scaleY(definition.yMax!) - scaleY(definition.yMin!));
-        context.strokeStyle = image ? "rgba(255,255,255,.94)" : "rgba(7,45,50,.78)";
+        context.strokeStyle = image ? "rgba(255,255,255,.98)" : "rgba(7,62,61,.88)";
         context.setLineDash([10, 7]);
         context.strokeRect(x, y, width, height);
-        const label = definition.name || "AOI";
-        const labelWidth = context.measureText(label).width + 18;
-        context.fillStyle = "rgba(7,45,50,.86)";
-        context.fillRect(x, Math.max(0, y - 29), labelWidth, 26);
-        context.fillStyle = "white";
-        context.fillText(label, x + 9, Math.max(19, y - 10));
+
+        const label = definition.name.trim() || `AOI ${definitionIndex + 1}`;
+        const labelHeight = fontSize + 12;
+        const labelWidth = Math.min(imageWidth - 8, context.measureText(label).width + 20);
+        const labelX = Math.max(4, Math.min(imageWidth - labelWidth - 4, x + 6));
+        const labelY = Math.max(4, Math.min(imageHeight - labelHeight - 4, y + 6));
+        context.setLineDash([]);
+        context.fillStyle = "rgba(255,255,255,.95)";
+        context.fillRect(labelX, labelY, labelWidth, labelHeight);
+        context.strokeStyle = "rgba(7,82,79,.9)";
+        context.lineWidth = Math.max(1, imageWidth / 1000);
+        context.strokeRect(labelX, labelY, labelWidth, labelHeight);
+        context.fillStyle = "#074b49";
+        context.fillText(label, labelX + 10, labelY + labelHeight / 2);
       });
       context.restore();
     };
@@ -643,7 +695,6 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
           if (datasets.some((dataset) => !dataset.mapping.gazeX || !dataset.mapping.gazeY)) throw new Error("Selecione as colunas de coordenada X e Y em todos os arquivos.");
           if (aoiConfig.definitions.some((definition) => [definition.xMin, definition.yMin, definition.xMax, definition.yMax].some((value) => value === null))) throw new Error("Preencha os quatro limites de cada AOI ou desenhe as áreas sobre uma imagem.");
         }
-        if (aoiConfig.metrics.ttff && datasets.some((dataset) => !dataset.mapping.timestamp)) throw new Error("Para calcular o TTFF, selecione a coluna de tempo/timestamp em todos os arquivos ou desative essa métrica.");
       }
       if (!outputSheets.eventTrace && !outputSheets.stimulusSummary && !phase3Selected) throw new Error("Selecione pelo menos uma fase para incluir no Excel.");
       const participantGroups = new Map<string, Set<string>>();
@@ -996,12 +1047,12 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
                       {datasets.map((dataset) => <div className="aoi-file-row" key={dataset.id}><strong>{dataset.fileName}</strong><div className="aoi-file-fields">
                         {aoiConfig.mode === "labels" && <div><Label>Coluna com o nome da AOI</Label><Select value={dataset.mapping.aoi ?? "__none__"} onValueChange={(value) => patchDataset(dataset.id, { mapping: { ...dataset.mapping, aoi: value === "__none__" ? undefined : value } })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="__none__">Selecionar coluna</SelectItem>{dataset.headers.map((header) => <SelectItem value={header} key={header}>{header}</SelectItem>)}</SelectContent></Select></div>}
                         {aoiConfig.mode === "coordinates" && <><div><Label>Coordenada X</Label><Select value={dataset.mapping.gazeX ?? "__none__"} onValueChange={(value) => patchDataset(dataset.id, { mapping: { ...dataset.mapping, gazeX: value === "__none__" ? undefined : value } })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="__none__">Selecionar coluna</SelectItem>{dataset.headers.map((header) => <SelectItem value={header} key={header}>{header}</SelectItem>)}</SelectContent></Select></div><div><Label>Coordenada Y</Label><Select value={dataset.mapping.gazeY ?? "__none__"} onValueChange={(value) => patchDataset(dataset.id, { mapping: { ...dataset.mapping, gazeY: value === "__none__" ? undefined : value } })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="__none__">Selecionar coluna</SelectItem>{dataset.headers.map((header) => <SelectItem value={header} key={header}>{header}</SelectItem>)}</SelectContent></Select></div></>}
-                        {aoiConfig.metrics.ttff && <div><Label>Tempo / timestamp</Label><Select value={dataset.mapping.timestamp ?? "__none__"} onValueChange={(value) => patchDataset(dataset.id, { mapping: { ...dataset.mapping, timestamp: value === "__none__" ? undefined : value } })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="__none__">Selecionar coluna</SelectItem>{dataset.headers.map((header) => <SelectItem value={header} key={header}>{header}</SelectItem>)}</SelectContent></Select></div>}
+                        {aoiConfig.metrics.ttff && <div><Label>Tempo / timestamp (opcional)</Label><Select value={dataset.mapping.timestamp ?? "__none__"} onValueChange={(value) => patchDataset(dataset.id, { mapping: { ...dataset.mapping, timestamp: value === "__none__" ? undefined : value } })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="__none__">Não informar</SelectItem>{dataset.headers.map((header) => <SelectItem value={header} key={header}>{header}</SelectItem>)}</SelectContent></Select></div>}
                       </div></div>)}
                     </div>
 
                     {aoiConfig.mode === "coordinates" && <div className="aoi-subsection"><div className="aoi-section-title"><div><strong>Desenhe as regiões</strong><span>Envie uma imagem do estímulo e arraste para criar retângulos. As coordenadas também podem ser ajustadas abaixo.</span></div><Button type="button" variant="outline" size="sm" onClick={() => aoiImageInput.current?.click()}><UploadCloud /> Escolher imagem</Button><input ref={aoiImageInput} type="file" accept="image/*" hidden onChange={(event) => onAoiImage(event.target.files?.[0])} /></div>
-                      <div className="aoi-coordinate-space"><div><strong>Escala das coordenadas</strong><span>Use “detectar automaticamente” na maioria dos arquivos. O Oculab reconhece valores entre 0 e 1 como coordenadas normalizadas e os ajusta ao tamanho da imagem.</span></div><Select value={aoiConfig.coordinateSpace ?? "auto"} onValueChange={(coordinateSpace) => setAoiConfig((current) => ({ ...current, coordinateSpace: coordinateSpace as NonNullable<AoiConfig["coordinateSpace"]> }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="auto">Detectar automaticamente</SelectItem><SelectItem value="pixels">Pixels da imagem</SelectItem><SelectItem value="normalized">Valores entre 0 e 1</SelectItem></SelectContent></Select></div>
+                      <div className="aoi-coordinate-space"><div><strong>Escala das coordenadas</strong><span>Use “detectar automaticamente” na maioria dos arquivos. O Oculab reconhece valores entre 0 e 1 e também redimensiona coordenadas de tela maiores que a imagem, sem descartar fixações.</span></div><Select value={aoiConfig.coordinateSpace ?? "auto"} onValueChange={(coordinateSpace) => setAoiConfig((current) => ({ ...current, coordinateSpace: coordinateSpace as NonNullable<AoiConfig["coordinateSpace"]> }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="auto">Detectar automaticamente</SelectItem><SelectItem value="pixels">Pixels da imagem</SelectItem><SelectItem value="normalized">Valores entre 0 e 1</SelectItem></SelectContent></Select></div>
                       {aoiReferenceImage ? <div className="aoi-draw-area" onPointerDown={(event) => { const point = pointOnAoiImage(event); if (!point) return; event.currentTarget.setPointerCapture(event.pointerId); setAoiDrawStart(point); setAoiDrawCurrent(point); }} onPointerMove={(event) => { if (aoiDrawStart) setAoiDrawCurrent(pointOnAoiImage(event)); }} onPointerUp={finishAoiDrawing} onPointerCancel={() => { setAoiDrawStart(null); setAoiDrawCurrent(null); }}>
                         {/* A imagem é local e temporária; não deve passar pelo otimizador remoto. */}
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1018,7 +1069,7 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
                     </div>}
 
                     <div className="aoi-subsection"><div className="aoi-section-title"><div><strong>Métricas no resultado</strong><span>Cada medida aparecerá em guias próprias por participante e por grupo.</span></div></div><div className="aoi-metrics-grid">{aoiMetricFields.map((metric) => <div className="metric-row" key={metric.key}><div><strong>{metric.label}</strong><span>{metric.detail}</span></div><Switch checked={aoiConfig.metrics[metric.key]} onCheckedChange={(checked) => { setAoiConfig((current) => ({ ...current, metrics: { ...current.metrics, [metric.key]: checked } })); setResult(null); }} /></div>)}</div>
-                      {aoiConfig.metrics.ttff && <div className="aoi-timestamp-unit"><div><strong>Unidade da coluna de tempo</strong><span>Informe a unidade gravada no timestamp. O resultado será convertido para a unidade escolhida no Excel.</span></div><Select value={aoiConfig.timestampUnit} onValueChange={(timestampUnit) => setAoiConfig((current) => ({ ...current, timestampUnit: timestampUnit as "ms" | "s" }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="ms">Milissegundos</SelectItem><SelectItem value="s">Segundos</SelectItem></SelectContent></Select></div>}
+                      {aoiConfig.metrics.ttff && <div className="aoi-timestamp-unit"><div><strong>Unidade da coluna de tempo</strong><span>Usada somente quando uma coluna de tempo for informada. Sem timestamp, o TTFF fica vazio; mapa de calor, permanência e contagens continuam funcionando.</span></div><Select value={aoiConfig.timestampUnit} onValueChange={(timestampUnit) => setAoiConfig((current) => ({ ...current, timestampUnit: timestampUnit as "ms" | "s" }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="ms">Milissegundos</SelectItem><SelectItem value="s">Segundos</SelectItem></SelectContent></Select></div>}
                     </div>
                   </>}
                 </CardContent>
@@ -1085,7 +1136,7 @@ export default function OculabWorkspace({ isAdmin = false }: { isAdmin?: boolean
                   <div><Label>Participante</Label><Select value={heatmapParticipant} onValueChange={setHeatmapParticipant}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="__all__">Todos os participantes</SelectItem>{heatmapOptions.participants.map((value) => <SelectItem value={value} key={value}>{value}</SelectItem>)}</SelectContent></Select></div>
                   <div><Label>Grupo</Label><Select value={heatmapGroup} onValueChange={setHeatmapGroup}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="__all__">Todos os grupos</SelectItem>{heatmapOptions.groups.map((value) => <SelectItem value={value} key={value}>{value}</SelectItem>)}</SelectContent></Select></div>
                 </div>
-                <div className="heatmap-method-note"><UploadCloud /><div><strong>Imagem de fundo opcional</strong><span>{aoiReferenceImage ? "A imagem atual será usada apenas como referência visual. Você pode substituí-la sem refazer a tabulação." : "Sem imagem, o Oculab gera o mapa normalmente sobre um fundo branco nas dimensões das coordenadas."}</span><Button type="button" variant="outline" size="sm" onClick={() => aoiImageInput.current?.click()}>{aoiReferenceImage ? "Trocar imagem" : "Adicionar imagem"}</Button><input ref={aoiImageInput} type="file" accept="image/*" hidden onChange={(event) => onAoiImage(event.target.files?.[0])} /></div></div>
+                <div className="heatmap-method-note"><UploadCloud /><div><strong>Imagem de fundo opcional</strong><span>{aoiReferenceImage ? "A imagem atual será usada apenas como referência visual. Você pode substituí-la sem refazer a tabulação." : "Sem imagem, o Oculab gera o mapa completo sobre um fundo branco, preservando toda a extensão das coordenadas."}</span><Button type="button" variant="outline" size="sm" onClick={() => aoiImageInput.current?.click()}>{aoiReferenceImage ? "Trocar imagem" : "Adicionar imagem"}</Button><input ref={aoiImageInput} type="file" accept="image/*" hidden onChange={(event) => onAoiImage(event.target.files?.[0])} /></div></div>
                 {filteredHeatmapPoints.length
                   ? <HeatmapCanvas imageSrc={aoiReferenceImage} imageWidth={heatmapCanvasSize.width} imageHeight={heatmapCanvasSize.height} points={filteredHeatmapPoints} definitions={visibleHeatmapDefinitions} />
                   : <div className="empty-state">Nenhuma amostra de fixação com coordenadas X e Y válidas corresponde aos filtros selecionados.</div>}

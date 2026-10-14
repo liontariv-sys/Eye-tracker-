@@ -164,3 +164,35 @@ test("ajusta coordenadas normalizadas à imagem antes de classificar a AOI", () 
   assert.equal(result.heatmapPoints[0].X, 600);
   assert.equal(result.aoiByParticipant[0].N_Fixacoes_AOI, 1);
 });
+
+
+test("redimensiona automaticamente coordenadas de tela maiores que a imagem sem perder AOIs", () => {
+  const datasets = [{
+    id: "tobii-mcs",
+    fileName: "tobii.xlsx",
+    durationUnit: "ms",
+    participantOverride: "P07",
+    groupOverride: "Grupo A",
+    mapping: { eventType: "evento", fixationId: "fix", duration: "tempo", stimulus: "estimulo", gazeX: "x", gazeY: "y" },
+    rows: [
+      { evento: "Fixation", fix: 1, tempo: 300, estimulo: "Tela", x: 1280, y: 720 },
+      { evento: "Fixation", fix: 2, tempo: 180, estimulo: "Tela", x: 2012, y: 1244 },
+    ],
+  }];
+  const aoi = {
+    enabled: true,
+    mode: "coordinates",
+    timestampUnit: "ms",
+    coordinateSpace: "auto",
+    imageWidth: 1280,
+    imageHeight: 720,
+    definitions: [{ id: "centro", name: "Centro", stimulus: "Tela", xMin: 600, yMin: 320, xMax: 700, yMax: 400 }],
+    metrics: { ttff: true, dwellTime: true, fixationCount: true, visitOrder: true, reach: true },
+  };
+  const normalized = normalizeBatchRows(datasets, "ms", [], aoi);
+  assert.equal(normalized[0][batchMapping.gazeX], 640);
+  assert.equal(normalized[0][batchMapping.gazeY], 360);
+  assert.deepEqual(normalized[0].__oculab_aoi_names, ["Centro"]);
+  assert.ok(normalized[1][batchMapping.gazeX] < 1280);
+  assert.ok(normalized[1][batchMapping.gazeY] < 720);
+});
